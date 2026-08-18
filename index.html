@@ -9,8 +9,15 @@
     :root[data-theme="blue"] {
       --bg: #0f172a; --card: #1e293b; --accent: #3b82f6; --text: #f8fafc; --muted: #94a3b8; --border: #334155; --badge-bg: rgba(59, 130, 246, 0.2);
     }
-    :root[data-theme="pink"] {
-      --bg: #1f0b18; --card: #2e1225; --accent: #ec4899; --text: #fdf2f8; --muted: #f472b6; --border: #501d40; --badge-bg: rgba(236, 72, 153, 0.2);
+    :root[data-theme="kirby"] {
+      --bg: #fff5f8;          /* Bright, almost-white soft pastel pink */
+      --card: #ffdeeb;        /* Soft Kirby bubblegum card background */
+      --accent: #ff4d94;      /* Vibrant Kirby pink for buttons & active states */
+      --text: #4a0e2e;        /* Dark berry for high readability */
+      --muted: #b85280;       /* Muted pinkish-purple for secondary text */
+      --border: #fca5c5;      /* Light bubblegum border */
+      --badge-bg: #f8b4d0;    /* Soft pink badge background */
+      --streak-bg: #ff0066;   /* Very saturated, intense electric pink streak badge */
     }
     :root[data-theme="olive"] {
       --bg: #141a13; --card: #1f271d; --accent: #658354; --text: #f3f6f2; --muted: #a3b899; --border: #354232; --badge-bg: rgba(101, 131, 84, 0.2);
@@ -35,7 +42,7 @@
 
     .menu-btn { background: var(--card); border: 1px solid var(--border); color: var(--text); font-size: 1.4rem; padding: 6px 12px; border-radius: 8px; cursor: pointer; }
     
-    .dropdown-menu { display: none; position: absolute; top: 100%; right: 0; background: var(--card); border: 1px solid var(--border); border-radius: 10px; width: 180px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); z-index: 100; margin-top: 8px; overflow: hidden; }
+    .dropdown-menu { display: none; position: absolute; top: 100%; right: 0; background: var(--card); border: 1px solid var(--border); border-radius: 10px; width: 180px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); z-index: 100; margin-top: 8px; overflow: hidden; }
     .dropdown-menu.active { display: block; }
     .dropdown-item { width: 100%; padding: 12px 16px; text-align: left; background: none; border: none; color: var(--text); font-size: 0.95rem; font-weight: 500; cursor: pointer; border-bottom: 1px solid var(--border); }
     .dropdown-item:last-child { border-bottom: none; }
@@ -62,7 +69,7 @@
     /* Analytics & Badges */
     .stats-row { display: flex; gap: 6px; flex-wrap: wrap; font-size: 0.75rem; color: var(--muted); border-top: 1px solid var(--border); padding-top: 8px; margin-top: 2px; }
     .stat-badge { background: var(--badge-bg); border: 1px solid var(--border); padding: 3px 8px; border-radius: 6px; font-weight: 600; color: var(--text); }
-    .stat-badge.streak { background: var(--accent); color: white; border: none; }
+    .stat-badge.streak { background: var(--streak-bg, var(--accent)); color: white; border: none; }
 
     .delete-btn { background: none; border: none; color: #ef4444; font-size: 1.4rem; cursor: pointer; padding: 0 8px; line-height: 1; }
     .empty-state { text-align: center; color: var(--muted); margin-top: 40px; font-size: 0.9rem; }
@@ -111,7 +118,7 @@
       <div class="settings-title">Color Theme</div>
       <div class="theme-grid">
         <button class="theme-btn" onclick="setTheme('blue')">Dark Blue</button>
-        <button class="theme-btn" onclick="setTheme('pink')">Pink</button>
+        <button class="theme-btn" onclick="setTheme('kirby')">Kirby Pink</button>
         <button class="theme-btn" onclick="setTheme('olive')">Olive</button>
         <button class="theme-btn" onclick="setTheme('red')">Red</button>
         <button class="theme-btn" onclick="setTheme('black')">Black</button>
@@ -138,8 +145,8 @@
       habits = [];
     }
 
-    // Load Theme Preference
-    const savedTheme = localStorage.getItem('my_theme') || 'olive';
+    // Load Theme Preference (defaults to new Kirby theme)
+    const savedTheme = localStorage.getItem('my_theme') || 'kirby';
     setTheme(savedTheme);
 
     document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-US', {
@@ -155,7 +162,6 @@
       document.getElementById('dropdownMenu').classList.toggle('active');
     }
 
-    // Close dropdown when clicking outside
     document.addEventListener('click', (e) => {
       const menu = document.getElementById('dropdownMenu');
       const btn = document.querySelector('.menu-btn');
@@ -190,7 +196,6 @@
       document.documentElement.setAttribute('data-theme', theme);
       localStorage.setItem('my_theme', theme);
       
-      // Update active state in theme buttons
       document.querySelectorAll('.theme-btn').forEach(btn => {
         btn.classList.toggle('active', btn.getAttribute('onclick').includes(`'${theme}'`));
       });
@@ -344,3 +349,4 @@
   </script>
 </body>
 </html>
+
