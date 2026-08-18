@@ -6,8 +6,14 @@
   <title>Daily Habits</title>
   <style>
     /* Theme Presets */
-    :root[data-theme="blue"] {
-      --bg: #0f172a; --card: #1e293b; --accent: #3b82f6; --text: #f8fafc; --muted: #94a3b8; --border: #334155; --badge-bg: rgba(59, 130, 246, 0.2);
+    :root[data-theme="white"] {
+      --bg: #ffffff;          /* Pure white background */
+      --card: #f8fafc;        /* Off-white cards */
+      --accent: #2563eb;      /* Clean blue accent */
+      --text: #0f172a;        /* High-contrast dark text */
+      --muted: #64748b;       /* Soft grey secondary text */
+      --border: #e2e8f0;      /* Subtle border */
+      --badge-bg: rgba(37, 99, 235, 0.1);
     }
     :root[data-theme="kirby"] {
       --bg: #fff5f8;          /* Bright, almost-white soft pastel pink */
@@ -19,6 +25,9 @@
       --badge-bg: #f8b4d0;    /* Soft pink badge background */
       --streak-bg: #ff0066;   /* Very saturated, intense electric pink streak badge */
     }
+    :root[data-theme="blue"] {
+      --bg: #0f172a; --card: #1e293b; --accent: #3b82f6; --text: #f8fafc; --muted: #94a3b8; --border: #334155; --badge-bg: rgba(59, 130, 246, 0.2);
+    }
     :root[data-theme="olive"] {
       --bg: #141a13; --card: #1f271d; --accent: #658354; --text: #f3f6f2; --muted: #a3b899; --border: #354232; --badge-bg: rgba(101, 131, 84, 0.2);
     }
@@ -26,10 +35,7 @@
       --bg: #1a0909; --card: #2b1212; --accent: #ef4444; --text: #fef2f2; --muted: #f87171; --border: #451a1a; --badge-bg: rgba(239, 68, 68, 0.2);
     }
     :root[data-theme="black"] {
-      --bg: #000000; --card: #121212; --accent: #ffffff; --text: #ffffff; --muted: #888888; --border: #262626; --badge-bg: rgba(255, 255, 255, 0.15);
-    }
-    :root[data-theme="grey"] {
-      --bg: #f3f4f6; --card: #ffffff; --accent: #4b5563; --text: #111827; --muted: #6b7280; --border: #e5e7eb; --badge-bg: rgba(107, 114, 128, 0.15);
+      --bg: #000000; --card: #121212; --accent: #262626; --text: #ffffff; --muted: #888888; --border: #262626; --badge-bg: rgba(255, 255, 255, 0.1);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
@@ -55,7 +61,7 @@
     /* Inputs & Buttons */
     .input-group { display: flex; gap: 8px; margin-bottom: 20px; }
     input[type="text"] { flex: 1; padding: 12px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 1rem; outline: none; }
-    button.add-btn { background: var(--accent); color: white; border: none; padding: 12px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; }
+    button.add-btn { background: var(--accent); color: white; border: 1px solid var(--border); padding: 12px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; }
 
     /* Lists */
     .habit-list { display: flex; flex-direction: column; gap: 12px; }
@@ -117,12 +123,12 @@
     <div class="settings-group">
       <div class="settings-title">Color Theme</div>
       <div class="theme-grid">
-        <button class="theme-btn" onclick="setTheme('blue')">Dark Blue</button>
+        <button class="theme-btn" onclick="setTheme('white')">White / Light</button>
         <button class="theme-btn" onclick="setTheme('kirby')">Kirby Pink</button>
+        <button class="theme-btn" onclick="setTheme('blue')">Dark Blue</button>
         <button class="theme-btn" onclick="setTheme('olive')">Olive</button>
         <button class="theme-btn" onclick="setTheme('red')">Red</button>
         <button class="theme-btn" onclick="setTheme('black')">Black</button>
-        <button class="theme-btn" onclick="setTheme('grey')">Grey / Light</button>
       </div>
     </div>
   </div>
@@ -145,8 +151,8 @@
       habits = [];
     }
 
-    // Load Theme Preference (defaults to new Kirby theme)
-    const savedTheme = localStorage.getItem('my_theme') || 'kirby';
+    // Default to the clear White theme
+    const savedTheme = localStorage.getItem('my_theme') || 'white';
     setTheme(savedTheme);
 
     document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-US', {
@@ -349,4 +355,3 @@
   </script>
 </body>
 </html>
-
