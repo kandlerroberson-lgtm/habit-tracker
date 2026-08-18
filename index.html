@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Daily Habits</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --accent: #3b82f6;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --border: #334155;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg); color: var(--text); padding: 20px; max-width: 480px; margin: 0 auto; min-height: 100vh; }
+    h1 { font-size: 1.6rem; margin-bottom: 4px; font-weight: 700; }
+    p.date { color: var(--muted); font-size: 0.9rem; margin-bottom: 24px; }
+    .input-group { display: flex; gap: 8px; margin-bottom: 24px; }
+    input[type="text"] { flex: 1; padding: 12px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 1rem; outline: none; }
+    button.add-btn { background: var(--accent); color: white; border: none; padding: 12px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; }
+    .habit-list { display: flex; flex-direction: column; gap: 10px; }
+    .habit-card { background: var(--card); padding: 14px; border-radius: 10px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .habit-left { display: flex; align-items: center; gap: 12px; }
+    .habit-checkbox { width: 22px; height: 22px; accent-color: var(--accent); cursor: pointer; }
+    .habit-name { font-size: 1rem; }
+    .habit-name.completed { text-decoration: line-through; color: var(--muted); }
+    .delete-btn { background: none; border: none; color: #ef4444; font-size: 1.4rem; cursor: pointer; padding: 0 8px; line-height: 1; }
+    .empty-state { text-align: center; color: var(--muted); margin-top: 40px; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <h1>Daily Habits</h1>
+  <p class="date" id="currentDate"></p>
+
+  <div class="input-group">
+    <input type="text" id="habitInput" placeholder="Add a new habit..." />
+    <button class="add-btn" id="addBtn">Add</button>
+  </div>
+
+  <div class="habit-list" id="habitList"></div>
+
+  <script>
+    function getLocalDateString() {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    let habits = [];
+    try {
+      habits = JSON.parse(localStorage.getItem('habits')) || [];
+    } catch (e) {
+      habits = [];
+    }
+
+    const today = getLocalDateString();
+    const lastReset = localStorage.getItem('lastReset');
+
+    if (lastReset !== today) {
+      habits = habits.map(h => ({ ...h, completed: false }));
+      localStorage.setItem('lastReset', today);
+      localStorage.setItem('habits', JSON.stringify(habits));
+    }
+
+    document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-US', {
+      weekday: 'long', month: 'short', day: 'numeric'
+    });
+
+    function saveAndRender() {
+      localStorage.setItem('habits', JSON.stringify(habits));
+      render();
+    }
+
+    function addHabit() {
+      const input = document.getElementById('habitInput');
+      const name = input.value.trim();
+      if (!name) return;
+      habits.push({ id: Date.now(), name, completed: false });
+      input.value = '';
+      saveAndRender();
+    }
+
+    function toggleHabit(id) {
+      habits = habits.map(h => h.id === id ? { ...h, completed: !h.completed } : h);
+      saveAndRender();
+    }
+
+    function deleteHabit(id) {
+      habits = habits.filter(h => h.id !== id);
+      saveAndRender();
+    }
+
+    function render() {
+      const habitList = document.getElementById('habitList');
+      habitList.innerHTML = '';
+
+      if (habits.length === 0) {
+        habitList.innerHTML = '<p class="empty-state">No habits added yet. Type one above to get started!</p>';
+        return;
+      }
+
+      habits.forEach(h => {
+        const card = document.createElement('div');
+        card.className = 'habit-card';
+
+        const leftDiv = document.createElement('div');
+        leftDiv.className = 'habit-left';
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.className = 'habit-checkbox';
+        checkbox.checked = h.completed;
+        checkbox.onclick = () => toggleHabit(h.id);
+
+        const span = document.createElement('span');
+        span.className = `habit-name ${h.completed ? 'completed' : ''}`;
+        span.textContent = h.name;
+
+        leftDiv.appendChild(checkbox);
+        leftDiv.appendChild(span);
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'delete-btn';
+        delBtn.innerHTML = '&times;';
+        delBtn.onclick = () => deleteHabit(h.id);
+
+        card.appendChild(leftDiv);
+        card.appendChild(delBtn);
+
+        habitList.appendChild(card);
+      });
+    }
+
+    document.getElementById('addBtn').onclick = addHabit;
+    document.getElementById('habitInput').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') addHabit();
+    });
+
+    render();
+  </script>
+</body>
+</html>
