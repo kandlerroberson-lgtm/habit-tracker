@@ -3,366 +3,534 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Meteorological Calendar Heatmap App</title>
+  <title>Daily Habits - Thermal Heatmap Edition</title>
+  <script src="https://cdn.tailwindcss.com"></script>
   <style>
     :root {
-      --bg-color: #f0f2f5;
+      --bg-main: #f8fafc;
       --card-bg: #ffffff;
-      --text-main: #1a1a1a;
-      --text-muted: #666666;
-      --border-color: rgba(0, 0, 0, 0.12);
-      --accent-color: #d90429;
-      --radius: 12px;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border-color: #e2e8f0;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --accent-light: #eff6ff;
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
+    [data-theme="kirby"] {
+      --bg-main: #fff0f5;
+      --card-bg: #ffffff;
+      --text-main: #4a1525;
+      --text-muted: #9c5270;
+      --border-color: #fbcfe8;
+      --accent: #ec4899;
+      --accent-hover: #db2777;
+      --accent-light: #fce7f3;
+    }
+
+    [data-theme="dark-blue"] {
+      --bg-main: #0f172a;
+      --card-bg: #1e293b;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border-color: #334155;
+      --accent: #38bdf8;
+      --accent-hover: #0284c7;
+      --accent-light: #1e3a5f;
+    }
+
+    [data-theme="olive"] {
+      --bg-main: #f4f5f0;
+      --card-bg: #ffffff;
+      --text-main: #273022;
+      --text-muted: #606c5a;
+      --border-color: #e0e5da;
+      --accent: #556b2f;
+      --accent-hover: #3b4a20;
+      --accent-light: #ecefe6;
+    }
+
+    [data-theme="red"] {
+      --bg-main: #fef2f2;
+      --card-bg: #ffffff;
+      --text-main: #450a0a;
+      --text-muted: #991b1b;
+      --border-color: #fecaca;
+      --accent: #dc2626;
+      --accent-hover: #b91c1c;
+      --accent-light: #fee2e2;
+    }
+
+    [data-theme="black"] {
+      --bg-main: #09090b;
+      --card-bg: #18181b;
+      --text-main: #fafafa;
+      --text-muted: #a1a1aa;
+      --border-color: #27272a;
+      --accent: #e4e4e7;
+      --accent-hover: #ffffff;
+      --accent-light: #27272a;
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background-color: var(--bg-color);
+      background-color: var(--bg-main);
       color: var(--text-main);
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
+      transition: background-color 0.2s, color 0.2s;
     }
 
-    /* Top Application Header */
-    .app-header {
-      background: #ffffff;
-      border-bottom: 1px solid var(--border-color);
-      padding: 16px 24px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+    .app-card {
+      background-color: var(--card-bg);
+      border-color: var(--border-color);
     }
 
-    .app-header h1 {
-      font-size: 1.25rem;
-      font-weight: 700;
+    .accent-btn {
+      background-color: var(--accent);
+      color: #ffffff;
+    }
+    .accent-btn:hover {
+      background-color: var(--accent-hover);
     }
 
-    .app-header span {
-      font-size: 0.875rem;
-      color: var(--text-muted);
-    }
-
-    /* Main Workspace Layout */
-    .app-container {
-      display: grid;
-      grid-template-columns: 1fr 300px;
-      gap: 24px;
-      max-width: 1200px;
-      width: 100%;
-      margin: 24px auto;
-      padding: 0 16px;
-      flex-grow: 1;
-    }
-
-    @media (max-width: 850px) {
-      .app-container {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    /* Primary Card: Calendar View */
-    .calendar-card {
-      background: var(--card-bg);
-      border-radius: var(--radius);
-      padding: 20px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-      display: flex;
-      flex-direction: column;
-    }
-
-    .calendar-title-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-    }
-
-    .day-headers {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      text-align: center;
-      font-weight: 600;
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      margin-bottom: 8px;
-    }
-
-    .calendar-viewport {
+    /* Thermal Canvas Positioning */
+    .calendar-container {
       position: relative;
-      width: 100%;
-      aspect-ratio: 7 / 5;
-      border-radius: 8px;
-      overflow: hidden;
-      border: 1px solid var(--border-color);
       background-color: #ffffff;
     }
 
-    /* Canvas Rendering Background */
-    #heatCanvas {
+    #thermalCanvas {
       position: absolute;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      filter: blur(24px) saturate(1.2);
-      transform: scale(1.08);
+      z-index: 0;
       pointer-events: none;
+      border-radius: 0.75rem;
     }
 
-    /* Interactive Calendar Grid Overlay */
     .calendar-grid {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      grid-template-rows: repeat(5, 1fr);
-      z-index: 2;
+      position: relative;
+      z-index: 1;
     }
 
-    .day-cell {
-      border-right: 1px solid var(--border-color);
-      border-bottom: 1px solid var(--border-color);
-      padding: 8px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      cursor: pointer;
-      user-select: none;
-      transition: background 0.15s ease;
+    .calendar-day-cell {
+      background: rgba(255, 255, 255, 0.35);
+      backdrop-filter: blur(2px);
+      transition: background 0.2s, transform 0.15s;
     }
 
-    .day-cell:nth-child(7n) { border-right: none; }
-    .day-cell:nth-last-child(-n+7) { border-bottom: none; }
-
-    .day-cell:hover {
-      background: rgba(0, 0, 0, 0.05);
+    .calendar-day-cell:hover {
+      background: rgba(255, 255, 255, 0.15);
+      transform: translateY(-2px);
     }
 
-    .date-num {
-      font-size: 0.85rem;
-      font-weight: 700;
-      text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
-    }
-
-    .val-num {
-      font-size: 0.75rem;
-      font-weight: 600;
-      align-self: flex-end;
-      text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
-    }
-
-    /* Sidebar / Controls Panel */
-    .sidebar {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    .panel {
-      background: var(--card-bg);
-      border-radius: var(--radius);
-      padding: 16px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-    }
-
-    .panel h3 {
-      font-size: 0.95rem;
-      margin-bottom: 12px;
-      border-bottom: 1px solid var(--border-color);
-      padding-bottom: 8px;
-    }
-
-    .control-group {
-      margin-bottom: 12px;
-    }
-
-    .control-group label {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      margin-bottom: 4px;
-    }
-
-    .control-group input[type="range"] {
-      width: 100%;
-    }
-
-    .stats-list {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      font-size: 0.85rem;
-    }
-
-    .stat-row {
-      display: flex;
-      justify-content: space-between;
-    }
-
-    .stat-row strong {
-      color: var(--text-main);
-    }
-
-    /* Heat Map Legend Bar */
-    .legend-bar {
-      height: 10px;
-      border-radius: 5px;
-      margin: 8px 0;
-      background: linear-gradient(to right, 
-        #ffffff 0%, 
-        #ffeea1 25%, 
-        #ff9900 50%, 
-        #d90429 75%, 
-        #4a000a 100%
-      );
-      border: 1px solid var(--border-color);
-    }
-
-    .legend-labels {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.7rem;
-      color: var(--text-muted);
-    }
+    /* Heatmap Square (Analytics Section) */
+    .heat-tier-0 { background-color: #f8fafc; border: 1px solid #e2e8f0; }
+    .heat-tier-1 { background-color: #fef08a; }
+    .heat-tier-2 { background-color: #fde047; }
+    .heat-tier-3 { background-color: #fb923c; }
+    .heat-tier-4 { background-color: #ef4444; }
+    .heat-tier-5 { background-color: #991b1b; }
   </style>
 </head>
-<body>
+<body class="min-h-screen pb-12 font-sans antialiased">
 
-  <header class="app-header">
-    <h1>Monthly Thermal Analysis</h1>
-    <span>Meteorological View</span>
+  <!-- Header / Navigation -->
+  <header class="border-b app-card sticky top-0 z-30 shadow-sm">
+    <div class="max-w-5xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl accent-btn flex items-center justify-center font-bold text-lg shadow">
+          D
+        </div>
+        <h1 class="text-xl font-bold tracking-tight">Daily Habits</h1>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="flex items-center gap-1 p-1 rounded-xl bg-black/5 dark:bg-white/5 text-sm font-medium">
+        <button onclick="switchTab('today')" id="tab-today" class="px-4 py-2 rounded-lg transition-all">Today</button>
+        <button onclick="switchTab('calendar')" id="tab-calendar" class="px-4 py-2 rounded-lg transition-all">Calendar Map</button>
+        <button onclick="switchTab('analytics')" id="tab-analytics" class="px-4 py-2 rounded-lg transition-all">Analytics</button>
+        <button onclick="switchTab('habits')" id="tab-habits" class="px-4 py-2 rounded-lg transition-all">Habits</button>
+        <button onclick="switchTab('settings')" id="tab-settings" class="px-4 py-2 rounded-lg transition-all">Settings</button>
+      </nav>
+    </div>
   </header>
 
-  <div class="app-container">
-    <!-- Calendar View Block -->
-    <main class="calendar-card">
-      <div class="calendar-title-bar">
-        <h2>October 2026</h2>
-      </div>
+  <!-- Main Content Area -->
+  <main class="max-w-5xl mx-auto px-4 mt-8">
 
-      <div class="day-headers">
-        <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
-      </div>
-
-      <div class="calendar-viewport">
-        <canvas id="heatCanvas"></canvas>
-        <div class="calendar-grid" id="grid"></div>
-      </div>
-    </main>
-
-    <!-- Sidebar Control & Stats Panel -->
-    <aside class="sidebar">
-      <div class="panel">
-        <h3>Visualization Controls</h3>
-        <div class="control-group">
-          <label>Blur Intensity <span id="blurVal">24px</span></label>
-          <input type="range" id="blurInput" min="5" max="40" value="24">
+    <!-- TODAY VIEW -->
+    <section id="view-today" class="tab-content space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-2xl font-bold" id="today-date-string">Today</h2>
+          <p class="text-sm opacity-70">Check off your habits for the day</p>
+        </div>
+        <div class="text-right">
+          <span class="text-3xl font-extrabold" id="today-score">0%</span>
+          <p class="text-xs uppercase tracking-wider opacity-60">Completed</p>
         </div>
       </div>
 
-      <div class="panel">
-        <h3>Monthly Summary</h3>
-        <div class="stats-list">
-          <div class="stat-row"><span>Peak Hotspot:</span><strong id="statMax">100%</strong></div>
-          <div class="stat-row"><span>Lowest Day:</span><strong id="statMin">0%</strong></div>
-          <div class="stat-row"><span>Monthly Average:</span><strong id="statAvg">37%</strong></div>
+      <div id="today-checklist" class="space-y-3">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+
+    <!-- CALENDAR MAP VIEW (THERMAL HEATMAP) -->
+    <section id="view-calendar" class="tab-content hidden space-y-6">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-2xl font-bold">Thermal Consistency Map</h2>
+          <p class="text-sm opacity-70">Hot zones show your high-consistency streaks</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="changeMonth(-1)" class="p-2 rounded-lg border app-card hover:opacity-80">← Prev</button>
+          <span id="calendar-month-label" class="text-lg font-bold min-w-[140px] text-center">Month Year</span>
+          <button onclick="changeMonth(1)" class="p-2 rounded-lg border app-card hover:opacity-80">Next →</button>
         </div>
       </div>
 
-      <div class="panel">
-        <h3>Color Scale</h3>
-        <div class="legend-bar"></div>
-        <div class="legend-labels">
-          <span>0% (White)</span>
-          <span>50% (Orange)</span>
-          <span>100% (Dark Red)</span>
+      <!-- Thermal Calendar Block -->
+      <div class="calendar-container rounded-2xl border shadow-lg overflow-hidden p-4 sm:p-6">
+        <!-- Thermal Heatmap Canvas Background -->
+        <canvas id="thermalCanvas"></canvas>
+
+        <!-- Calendar Days Overlay -->
+        <div class="calendar-grid">
+          <div class="grid grid-cols-7 gap-2 mb-2 text-center text-xs font-bold uppercase tracking-wider opacity-70">
+            <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+          </div>
+          <div id="calendar-days-grid" class="grid grid-cols-7 gap-2">
+            <!-- Rendered dynamically -->
+          </div>
         </div>
       </div>
-    </aside>
+
+      <!-- Thermal Legend -->
+      <div class="flex items-center justify-center gap-3 text-xs font-medium opacity-80 pt-2">
+        <span>Low (0%)</span>
+        <div class="flex items-center gap-1">
+          <span class="w-4 h-4 rounded border bg-white inline-block"></span>
+          <span class="w-4 h-4 rounded bg-yellow-300 inline-block"></span>
+          <span class="w-4 h-4 rounded bg-orange-500 inline-block"></span>
+          <span class="w-4 h-4 rounded bg-red-600 inline-block"></span>
+          <span class="w-4 h-4 rounded bg-red-900 inline-block"></span>
+        </div>
+        <span>High Zone (100%)</span>
+      </div>
+    </section>
+
+    <!-- ANALYTICS VIEW -->
+    <section id="view-analytics" class="tab-content hidden space-y-6">
+      <h2 class="text-2xl font-bold">Performance Analytics</h2>
+      
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="app-card border rounded-2xl p-5 shadow-sm">
+          <p class="text-xs uppercase tracking-wider opacity-60">Current Streak</p>
+          <p class="text-3xl font-extrabold mt-1" id="stat-current-streak">0 Days</p>
+        </div>
+        <div class="app-card border rounded-2xl p-5 shadow-sm">
+          <p class="text-xs uppercase tracking-wider opacity-60">30-Day Score</p>
+          <p class="text-3xl font-extrabold mt-1" id="stat-30day-score">0%</p>
+        </div>
+        <div class="app-card border rounded-2xl p-5 shadow-sm">
+          <p class="text-xs uppercase tracking-wider opacity-60">Milestone Rank</p>
+          <p class="text-3xl font-extrabold mt-1" id="stat-milestone">Spark</p>
+        </div>
+      </div>
+
+      <!-- 52-Week Heatmap -->
+      <div class="app-card border rounded-2xl p-6 shadow-sm">
+        <h3 class="text-lg font-bold mb-4">52-Week Activity Grid</h3>
+        <div id="year-heatmap" class="flex flex-wrap gap-1 max-h-60 overflow-x-auto p-1">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+    </section>
+
+    <!-- HABITS MANAGEMENT VIEW -->
+    <section id="view-habits" class="tab-content hidden space-y-6">
+      <div class="flex items-center justify-between">
+        <h2 class="text-2xl font-bold">Manage Habits</h2>
+        <button onclick="openHabitModal()" class="px-4 py-2 rounded-xl accent-btn font-medium shadow">+ Add Habit</button>
+      </div>
+
+      <div id="habits-list" class="space-y-3">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+
+    <!-- SETTINGS VIEW -->
+    <section id="view-settings" class="tab-content hidden space-y-6">
+      <h2 class="text-2xl font-bold">Settings & Themes</h2>
+
+      <div class="app-card border rounded-2xl p-6 space-y-4 shadow-sm">
+        <h3 class="text-lg font-bold">Color Theme</h3>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <button onclick="setTheme('white')" class="p-3 border rounded-xl font-medium text-center hover:opacity-80">White</button>
+          <button onclick="setTheme('kirby')" class="p-3 border rounded-xl font-medium text-center bg-pink-50 text-pink-700 border-pink-200">Kirby</button>
+          <button onclick="setTheme('dark-blue')" class="p-3 border rounded-xl font-medium text-center bg-slate-900 text-sky-400 border-slate-700">Dark Blue</button>
+          <button onclick="setTheme('olive')" class="p-3 border rounded-xl font-medium text-center bg-stone-100 text-amber-900 border-stone-300">Olive</button>
+          <button onclick="setTheme('red')" class="p-3 border rounded-xl font-medium text-center bg-red-50 text-red-700 border-red-200">Red</button>
+          <button onclick="setTheme('black')" class="p-3 border rounded-xl font-medium text-center bg-zinc-950 text-zinc-100 border-zinc-800">Black</button>
+        </div>
+      </div>
+
+      <div class="app-card border rounded-2xl p-6 space-y-4 shadow-sm">
+        <h3 class="text-lg font-bold text-red-600">Data Management</h3>
+        <p class="text-sm opacity-70">Clear all local storage records and reset app habits.</p>
+        <button onclick="resetData()" class="px-4 py-2 rounded-xl bg-red-600 text-white font-medium hover:bg-red-700">Reset All Data</button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Add/Edit Habit Modal -->
+  <div id="habit-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="app-card border rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+      <h3 class="text-xl font-bold" id="modal-title">Add New Habit</h3>
+      <input type="text" id="habit-input-name" placeholder="Habit Name (e.g. Morning Run)" class="w-full px-4 py-2 border rounded-xl bg-transparent outline-none focus:ring-2 focus:ring-blue-500">
+      <div class="flex justify-end gap-2">
+        <button onclick="closeHabitModal()" class="px-4 py-2 rounded-xl border opacity-80">Cancel</button>
+        <button onclick="saveHabit()" class="px-4 py-2 rounded-xl accent-btn">Save</button>
+      </div>
+    </div>
   </div>
 
   <script>
-    // 35 cells (7 days x 5 weeks) representing the month layout
-    const dayValues = [
-      10,  15,  25,  40,  65,  85,  95,
-      05,  20,  30,  50,  70,  90, 100,
-      00,  10,  20,  45,  60,  80,  75,
-      05,  15,  35,  55,  70,  60,  40,
-      00,  05,  10,  20,  30,  25,  10
-    ];
+    // -------------------------------------------------------------
+    // App State & Initialization
+    // -------------------------------------------------------------
+    let state = {
+      habits: JSON.parse(localStorage.getItem('dh_habits')) || [
+        { id: '1', name: 'Morning Walk' },
+        { id: '2', name: 'Read 20 Pages' },
+        { id: '3', name: 'Workout / Mobility' }
+      ],
+      records: JSON.parse(localStorage.getItem('dh_records')) || {}, // Key: YYYY-MM-DD, Value: [habitId1, habitId2]
+      theme: localStorage.getItem('dh_theme') || 'white',
+      currentTab: 'today',
+      calendarDate: new Date()
+    };
 
-    const COLS = 7;
-    const ROWS = 5;
-
-    // Color Interpolation (White -> Yellow -> Orange -> Red -> Dark Red)
-    function getColorForValue(val) {
-      const norm = Math.max(0, Math.min(100, val)) / 100;
-      const stops = [
-        { p: 0.00, r: 255, g: 255, b: 255 }, // White
-        { p: 0.25, r: 255, g: 238, b: 161 }, // Yellow
-        { p: 0.50, r: 255, g: 153, b: 0   }, // Orange
-        { p: 0.75, r: 217, g: 4,   b: 41  }, // Red
-        { p: 1.00, r: 74,  g: 0,   b: 10  }  // Dark Red
-      ];
-
-      let lower = stops[0], upper = stops[stops.length - 1];
-      for (let i = 0; i < stops.length - 1; i++) {
-        if (norm >= stops[i].p && norm <= stops[i + 1].p) {
-          lower = stops[i];
-          upper = stops[i + 1];
-          break;
-        }
-      }
-
-      const factor = (upper.p - lower.p) === 0 ? 0 : (norm - lower.p) / (upper.p - lower.p);
-      return {
-        r: Math.round(lower.r + factor * (upper.r - lower.r)),
-        g: Math.round(lower.g + factor * (upper.g - lower.g)),
-        b: Math.round(lower.b + factor * (upper.b - lower.b))
-      };
+    function saveState() {
+      localStorage.setItem('dh_habits', JSON.stringify(state.habits));
+      localStorage.setItem('dh_records', JSON.stringify(state.records));
+      localStorage.setItem('dh_theme', state.theme);
     }
 
-    function renderHeatmap() {
-      const canvas = document.getElementById('heatCanvas');
-      const ctx = canvas.getContext('2d');
+    function init() {
+      setTheme(state.theme);
+      switchTab('today');
+      renderToday();
+      window.addEventListener('resize', () => {
+        if (state.currentTab === 'calendar') renderThermalCalendar();
+      });
+    }
+
+    // -------------------------------------------------------------
+    // Theme Engine
+    // -------------------------------------------------------------
+    function setTheme(themeName) {
+      state.theme = themeName;
+      if (themeName === 'white') {
+        document.documentElement.removeAttribute('data-theme');
+      } else {
+        document.documentElement.setAttribute('data-theme', themeName);
+      }
+      saveState();
+    }
+
+    // -------------------------------------------------------------
+    // Tab Navigation
+    // -------------------------------------------------------------
+    function switchTab(tabName) {
+      state.currentTab = tabName;
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('nav button').forEach(el => el.classList.remove('accent-btn'));
+
+      document.getElementById(`view-${tabName}`).classList.remove('hidden');
+      document.getElementById(`tab-${tabName}`).classList.add('accent-btn');
+
+      if (tabName === 'today') renderToday();
+      if (tabName === 'calendar') renderThermalCalendar();
+      if (tabName === 'analytics') renderAnalytics();
+      if (tabName === 'habits') renderHabitsList();
+    }
+
+    // Helpers
+    function formatDateKey(date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    function getCompletionRatio(dateKey) {
+      if (!state.habits.length) return 0;
+      const completed = state.records[dateKey] || [];
+      return Math.min(1, completed.length / state.habits.length);
+    }
+
+    // -------------------------------------------------------------
+    // TODAY VIEW LOGIC
+    // -------------------------------------------------------------
+    function renderToday() {
+      const today = new Date();
+      document.getElementById('today-date-string').innerText = today.toLocaleDateString('en-US', {
+        weekday: 'long', month: 'short', day: 'numeric'
+      });
+
+      const dateKey = formatDateKey(today);
+      const completed = state.records[dateKey] || [];
+      const ratio = getCompletionRatio(dateKey);
+      
+      document.getElementById('today-score').innerText = `${Math.round(ratio * 100)}%`;
+
+      const listContainer = document.getElementById('today-checklist');
+      listContainer.innerHTML = '';
+
+      if (!state.habits.length) {
+        listContainer.innerHTML = `<p class="text-sm opacity-60">No habits added yet. Go to Habits tab to create one!</p>`;
+        return;
+      }
+
+      state.habits.forEach(habit => {
+        const isDone = completed.includes(habit.id);
+        const item = document.createElement('div');
+        item.className = `app-card border rounded-2xl p-4 flex items-center justify-between cursor-pointer transition-all shadow-sm ${
+          isDone ? 'opacity-80 bg-black/5 dark:bg-white/5' : ''
+        }`;
+        item.onclick = () => toggleHabitToday(habit.id);
+
+        item.innerHTML = `
+          <span class="font-medium ${isDone ? 'line-through opacity-60' : ''}">${habit.name}</span>
+          <div class="w-6 h-6 rounded-lg border flex items-center justify-center transition-all ${
+            isDone ? 'accent-btn border-transparent' : 'border-slate-300'
+          }">
+            ${isDone ? '✓' : ''}
+          </div>
+        `;
+        listContainer.appendChild(item);
+      });
+    }
+
+    function toggleHabitToday(habitId) {
+      const dateKey = formatDateKey(new Date());
+      let current = state.records[dateKey] || [];
+      if (current.includes(habitId)) {
+        current = current.filter(id => id !== habitId);
+      } else {
+        current.push(habitId);
+      }
+      state.records[dateKey] = current;
+      saveState();
+      renderToday();
+    }
+
+    // -------------------------------------------------------------
+    // CALENDAR VIEW (THERMAL HEATMAP ENGINE)
+    // -------------------------------------------------------------
+    function changeMonth(delta) {
+      state.calendarDate.setMonth(state.calendarDate.getMonth() + delta);
+      renderThermalCalendar();
+    }
+
+    function renderThermalCalendar() {
+      const year = state.calendarDate.getFullYear();
+      const month = state.calendarDate.getMonth();
+
+      document.getElementById('calendar-month-label').innerText = new Date(year, month).toLocaleDateString('en-US', {
+        month: 'long', year: 'numeric'
+      });
+
+      const firstDayIndex = new Date(year, month, 1).getDay();
+      const totalDays = new Date(year, month + 1, 0).getDate();
+
+      const grid = document.getElementById('calendar-days-grid');
+      grid.innerHTML = '';
+
+      // Empty padding cells
+      for (let i = 0; i < firstDayIndex; i++) {
+        const emptyCell = document.createElement('div');
+        emptyCell.className = 'h-16 sm:h-20 border-transparent';
+        grid.appendChild(emptyCell);
+      }
+
+      const dayElements = [];
+
+      // Day cells
+      for (let d = 1; d <= totalDays; d++) {
+        const currentDate = new Date(year, month, d);
+        const dateKey = formatDateKey(currentDate);
+        const ratio = getCompletionRatio(dateKey);
+
+        const cell = document.createElement('div');
+        cell.className = 'calendar-day-cell h-16 sm:h-20 rounded-xl border p-2 flex flex-col justify-between shadow-sm relative overflow-hidden';
+        
+        const isToday = formatDateKey(new Date()) === dateKey;
+        
+        cell.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold ${isToday ? 'px-2 py-0.5 rounded-full accent-btn' : ''}">${d}</span>
+            ${ratio > 0 ? `<span class="text-[10px] font-bold opacity-70">${Math.round(ratio * 100)}%</span>` : ''}
+          </div>
+        `;
+
+        grid.appendChild(cell);
+        dayElements.push({ element: cell, ratio: ratio });
+      }
+
+      // Draw Classic Thermal Heatmap Layer on Canvas
+      requestAnimationFrame(() => drawThermalCanvas(dayElements));
+    }
+
+    function drawThermalCanvas(dayElements) {
+      const canvas = document.getElementById('thermalCanvas');
       const container = canvas.parentElement;
+      
+      const rect = container.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = rect.height;
 
-      const width = container.clientWidth;
-      const height = container.clientHeight;
-      canvas.width = width;
-      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, width, height);
+      if (!dayElements.length) return;
 
-      const cellW = width / COLS;
-      const cellH = height / ROWS;
-      const radius = Math.max(cellW, cellH) * 1.3;
+      // Render radial heat spots behind each day
+      dayElements.forEach(({ element, ratio }) => {
+        if (ratio <= 0) return;
 
-      dayValues.forEach((val, idx) => {
-        const col = idx % COLS;
-        const row = Math.floor(idx / COLS);
-        const centerX = col * cellW + cellW / 2;
-        const centerY = row * cellH + cellH / 2;
+        const elRect = element.getBoundingClientRect();
+        const centerX = (elRect.left - rect.left) + elRect.width / 2;
+        const centerY = (elRect.top - rect.top) + elRect.height / 2;
 
-        const color = getColorForValue(val);
+        // Radius scales with consistency heat
+        const radius = Math.max(elRect.width, elRect.height) * (0.8 + ratio * 0.6);
+
         const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
 
-        gradient.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, 0.9)`);
-        gradient.addColorStop(0.7, `rgba(${color.r}, ${color.g}, ${color.b}, 0.4)`);
-        gradient.addColorStop(1, `rgba(${color.r}, ${color.g}, ${color.b}, 0)`);
+        // Classic Thermal Scale Color Mapping
+        if (ratio > 0.8) {
+          gradient.addColorStop(0, 'rgba(153, 27, 27, 0.85)');   // Dark Red Core
+          gradient.addColorStop(0.5, 'rgba(220, 38, 38, 0.6)');  // Red
+          gradient.addColorStop(0.8, 'rgba(249, 115, 22, 0.3)'); // Orange
+        } else if (ratio > 0.6) {
+          gradient.addColorStop(0, 'rgba(220, 38, 38, 0.8)');   // Red Core
+          gradient.addColorStop(0.6, 'rgba(249, 115, 22, 0.4)'); // Orange
+        } else if (ratio > 0.4) {
+          gradient.addColorStop(0, 'rgba(249, 115, 22, 0.75)'); // Orange Core
+          gradient.addColorStop(0.7, 'rgba(253, 224, 71, 0.35)');// Yellow
+        } else if (ratio > 0.2) {
+          gradient.addColorStop(0, 'rgba(253, 224, 71, 0.7)');  // Yellow Core
+          gradient.addColorStop(0.8, 'rgba(255, 255, 255, 0.2)');// White Blend
+        } else {
+          gradient.addColorStop(0, 'rgba(255, 255, 255, 0.6)'); // Cool White Zone
+        }
+
+        gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
 
         ctx.fillStyle = gradient;
         ctx.beginPath();
@@ -371,57 +539,117 @@
       });
     }
 
-    function buildGrid() {
-      const grid = document.getElementById('grid');
-      grid.innerHTML = '';
+    // -------------------------------------------------------------
+    // ANALYTICS & HABITS MANAGEMENT
+    // -------------------------------------------------------------
+    function renderAnalytics() {
+      // Calculate 30-day average
+      let sumRatio = 0;
+      const today = new Date();
+      for (let i = 0; i < 30; i++) {
+        const d = new Date();
+        d.setDate(today.getDate() - i);
+        sumRatio += getCompletionRatio(formatDateKey(d));
+      }
+      const score30 = Math.round((sumRatio / 30) * 100);
+      document.getElementById('stat-30day-score').innerText = `${score30}%`;
 
-      dayValues.forEach((val, idx) => {
-        const dayCell = document.createElement('div');
-        dayCell.className = 'day-cell';
+      // Milestone
+      let rank = 'Spark';
+      if (score30 >= 85) rank = 'Iron Will';
+      else if (score30 >= 65) rank = 'Centurion';
+      else if (score30 >= 40) rank = 'Flame';
+      document.getElementById('stat-milestone').innerText = rank;
 
-        const dateNum = document.createElement('span');
-        dateNum.className = 'date-num';
-        dateNum.textContent = idx + 1 <= 31 ? idx + 1 : '';
+      // Streak calculation
+      let streak = 0;
+      let d = new Date();
+      while (true) {
+        const ratio = getCompletionRatio(formatDateKey(d));
+        if (ratio >= 0.5) {
+          streak++;
+          d.setDate(d.getDate() - 1);
+        } else {
+          break;
+        }
+      }
+      document.getElementById('stat-current-streak').innerText = `${streak} Days`;
 
-        const valNum = document.createElement('span');
-        valNum.className = 'val-num';
-        valNum.textContent = idx + 1 <= 31 ? `${val}%` : '';
+      // 52-Week Activity Grid
+      const yearContainer = document.getElementById('year-heatmap');
+      yearContainer.innerHTML = '';
+      for (let i = 364; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(today.getDate() - i);
+        const ratio = getCompletionRatio(formatDateKey(date));
 
-        dayCell.appendChild(dateNum);
-        dayCell.appendChild(valNum);
-        grid.appendChild(dayCell);
+        let tier = 0;
+        if (ratio > 0.8) tier = 5;
+        else if (ratio > 0.6) tier = 4;
+        else if (ratio > 0.4) tier = 3;
+        else if (ratio > 0.2) tier = 2;
+        else if (ratio > 0) tier = 1;
+
+        const box = document.createElement('div');
+        box.className = `w-3 h-3 rounded-sm heat-tier-${tier}`;
+        box.title = `${formatDateKey(date)}: ${Math.round(ratio * 100)}%`;
+        yearContainer.appendChild(box);
+      }
+    }
+
+    function renderHabitsList() {
+      const container = document.getElementById('habits-list');
+      container.innerHTML = '';
+
+      if (!state.habits.length) {
+        container.innerHTML = `<p class="text-sm opacity-60">No habits configured.</p>`;
+        return;
+      }
+
+      state.habits.forEach(habit => {
+        const item = document.createElement('div');
+        item.className = 'app-card border rounded-2xl p-4 flex items-center justify-between shadow-sm';
+        item.innerHTML = `
+          <span class="font-medium">${habit.name}</span>
+          <button onclick="deleteHabit('${habit.id}')" class="text-sm text-red-500 hover:underline">Delete</button>
+        `;
+        container.appendChild(item);
       });
     }
 
-    function calculateStats() {
-      const validVals = dayValues.slice(0, 31);
-      const max = Math.max(...validVals);
-      const min = Math.min(...validVals);
-      const avg = Math.round(validVals.reduce((a, b) => a + b, 0) / validVals.length);
-
-      document.getElementById('statMax').textContent = `${max}%`;
-      document.getElementById('statMin').textContent = `${min}%`;
-      document.getElementById('statAvg').textContent = `${avg}%`;
+    function openHabitModal() {
+      document.getElementById('habit-input-name').value = '';
+      document.getElementById('habit-modal').classList.remove('hidden');
     }
 
-    // Dynamic Control Event Handlers
-    const blurInput = document.getElementById('blurInput');
-    const blurVal = document.getElementById('blurVal');
-    const canvas = document.getElementById('heatCanvas');
+    function closeHabitModal() {
+      document.getElementById('habit-modal').classList.add('hidden');
+    }
 
-    blurInput.addEventListener('input', (e) => {
-      const value = e.target.value;
-      blurVal.textContent = `${value}px`;
-      canvas.style.filter = `blur(${value}px) saturate(1.2)`;
-    });
+    function saveHabit() {
+      const name = document.getElementById('habit-input-name').value.trim();
+      if (!name) return;
+      state.habits.push({ id: Date.now().toString(), name });
+      saveState();
+      closeHabitModal();
+      renderHabitsList();
+    }
 
-    window.addEventListener('load', () => {
-      buildGrid();
-      renderHeatmap();
-      calculateStats();
-    });
+    function deleteHabit(id) {
+      state.habits = state.habits.filter(h => h.id !== id);
+      saveState();
+      renderHabitsList();
+    }
 
-    window.addEventListener('resize', renderHeatmap);
+    function resetData() {
+      if (confirm('Are you sure you want to delete all habits and records?')) {
+        localStorage.clear();
+        location.reload();
+      }
+    }
+
+    // Run application on DOM ready
+    document.addEventListener('DOMContentLoaded', init);
   </script>
 </body>
 </html>
