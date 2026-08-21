@@ -108,6 +108,14 @@
     .heatmap-legend { display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 8px; font-size: 0.7rem; color: var(--muted); }
     .legend-box { width: 10px; height: 10px; border-radius: 2px; }
 
+    /* Task Analytics in History */
+    .history-section-title { font-size: 1rem; font-weight: 600; margin-bottom: 12px; }
+    .task-stats-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 12px; }
+    .task-stats-header { font-size: 1rem; font-weight: 600; margin-bottom: 8px; }
+    .task-stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; font-size: 0.85rem; color: var(--muted); }
+    .task-stat-item { background: var(--bg); border: 1px solid var(--border); padding: 8px; border-radius: 6px; text-align: center; }
+    .task-stat-value { font-size: 1.1rem; font-weight: 700; color: var(--text); margin-top: 2px; }
+
     /* Apple-Style Calendar View */
     .cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
     .cal-header h2 { font-size: 1.1rem; font-weight: 600; }
@@ -174,7 +182,8 @@
     
     <div class="dropdown-menu" id="dropdownMenu">
       <button class="dropdown-item active" id="itemToday" onclick="navigate('today', 'Today')">Today</button>
-      <button class="dropdown-item" id="itemCalendar" onclick="navigate('calendar', 'Calendar')">Calendar History</button>
+      <button class="dropdown-item" id="itemCalendar" onclick="navigate('calendar', 'Calendar')">Calendar</button>
+      <button class="dropdown-item" id="itemHistory" onclick="navigate('history', 'History')">History</button>
       <button class="dropdown-item" id="itemManage" onclick="navigate('manage', 'Manage Habits')">Manage Habits</button>
       <button class="dropdown-item" id="itemSettings" onclick="navigate('settings', 'Settings')">Settings</button>
     </div>
@@ -187,6 +196,22 @@
 
   <!-- CALENDAR VIEW -->
   <div id="calendarView" class="tab-content">
+    <div class="cal-header">
+      <h2 id="calMonthTitle"></h2>
+      <div class="cal-nav">
+        <button onclick="changeMonth(-1)">&lt;</button>
+        <button onclick="changeMonth(1)">&gt;</button>
+      </div>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div class="cal-editor" id="calEditor">
+      <div class="cal-editor-title" id="selectedDateTitle">Select a date</div>
+      <div class="habit-list" id="calHabitList"></div>
+    </div>
+  </div>
+
+  <!-- HISTORY VIEW -->
+  <div id="historyView" class="tab-content">
     <div class="heatmap-section">
       <div class="heatmap-header">
         <span class="heatmap-title">Activity Heatmap</span>
@@ -206,18 +231,8 @@
       </div>
     </div>
 
-    <div class="cal-header">
-      <h2 id="calMonthTitle"></h2>
-      <div class="cal-nav">
-        <button onclick="changeMonth(-1)">&lt;</button>
-        <button onclick="changeMonth(1)">&gt;</button>
-      </div>
-    </div>
-    <div class="cal-grid" id="calGrid"></div>
-    <div class="cal-editor" id="calEditor">
-      <div class="cal-editor-title" id="selectedDateTitle">Select a date</div>
-      <div class="habit-list" id="calHabitList"></div>
-    </div>
+    <div class="history-section-title">Task Breakdown</div>
+    <div id="historyTaskList"></div>
   </div>
 
   <!-- MANAGE VIEW -->
@@ -313,8 +328,12 @@
       } else if (view === 'calendar') {
         document.getElementById('calendarView').classList.add('active');
         document.getElementById('itemCalendar').classList.add('active');
-        renderHeatmap();
         renderCalendar();
+      } else if (view === 'history') {
+        document.getElementById('historyView').classList.add('active');
+        document.getElementById('itemHistory').classList.add('active');
+        renderHeatmap();
+        renderHistory();
       } else if (view === 'manage') {
         document.getElementById('manageView').classList.add('active');
         document.getElementById('itemManage').classList.add('active');
@@ -387,6 +406,28 @@
         }
       }
 
+      // Calculate Longest Streak
+      const sortedHistory = [...history].sort();
+      let maxStreak = 0;
+      let currentTempStreak = 0;
+      let prevDate = null;
+
+      sortedHistory.forEach(dStr => {
+        const d = new Date(dStr);
+        if (!prevDate) {
+          currentTempStreak = 1;
+        } else {
+          const diff = Math.round((d - prevDate) / (1000 * 60 * 60 * 24));
+          if (diff === 1) {
+            currentTempStreak++;
+          } else if (diff > 1) {
+            currentTempStreak = 1;
+          }
+        }
+        if (currentTempStreak > maxStreak) maxStreak = currentTempStreak;
+        prevDate = d;
+      });
+
       function countInRange(days) {
         return history.filter(dStr => {
           const d = new Date(dStr);
@@ -396,6 +437,8 @@
       }
 
       const daysInMonth = getDaysInCurrentMonth();
+      const last30Count = countInRange(30);
+      const consistency30d = Math.min(100, Math.round((last30Count / Math.min(30, totalDaysActive)) * 100));
 
       let badgeClass = "streak";
       let badgeLabel = `🔥 ${streak} day streak`;
@@ -415,6 +458,8 @@
 
       return {
         streak,
+        longestStreak: maxStreak,
+        consistency30d,
         badgeClass,
         badgeLabel,
         week: `${countInRange(7)}/${Math.min(7, totalDaysActive)}`,
@@ -448,7 +493,6 @@
       save();
 
       if (customDateStr) {
-        renderHeatmap();
         renderCalendar();
       } else {
         renderToday();
@@ -530,7 +574,10 @@
         cell.className = 'heatmap-cell';
         cell.setAttribute('data-level', level);
         cell.title = `${dStr}: ${completedCount}/${totalHabits} completed`;
-        cell.onclick = () => selectCalDate(dStr);
+        cell.onclick = () => {
+          selectedCalDateStr = dStr;
+          navigate('calendar', 'Calendar');
+        };
 
         container.appendChild(cell);
 
@@ -555,6 +602,46 @@
         const scrollContainer = document.querySelector('.heatmap-container');
         if (scrollContainer) scrollContainer.scrollLeft = scrollContainer.scrollWidth;
       }, 50);
+    }
+
+    /* HISTORY VIEW TASK BREAKDOWN */
+    function renderHistory() {
+      const container = document.getElementById('historyTaskList');
+      container.innerHTML = '';
+
+      if (habits.length === 0) {
+        container.innerHTML = '<p class="empty-state">No habits to analyze yet.</p>';
+        return;
+      }
+
+      habits.forEach(h => {
+        const stats = calculateStats(h.history || [], h.createdAt);
+
+        const card = document.createElement('div');
+        card.className = 'task-stats-card';
+        card.innerHTML = `
+          <div class="task-stats-header">${h.name}</div>
+          <div class="task-stats-grid">
+            <div class="task-stat-item">
+              <div>Current Streak</div>
+              <div class="task-stat-value">🔥 ${stats.streak}d</div>
+            </div>
+            <div class="task-stat-item">
+              <div>Longest Streak</div>
+              <div class="task-stat-value">🏆 ${stats.longestStreak}d</div>
+            </div>
+            <div class="task-stat-item">
+              <div>30-Day Consistency</div>
+              <div class="task-stat-value">${stats.consistency30d}%</div>
+            </div>
+            <div class="task-stat-item">
+              <div>Total Completions</div>
+              <div class="task-stat-value">${(h.history || []).length}</div>
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
     }
 
     /* CALENDAR FUNCTIONALITY */
