@@ -14,6 +14,11 @@
       --muted: #64748b;
       --border: #e2e8f0;
       --badge-bg: rgba(37, 99, 235, 0.1);
+      --heat-0: #ebedf0;
+      --heat-1: #9be9a8;
+      --heat-2: #40c463;
+      --heat-3: #30a14e;
+      --heat-4: #216e39;
     }
     :root[data-theme="kirby"] {
       --bg: #fff5f8;
@@ -24,18 +29,27 @@
       --border: #fca5c5;
       --badge-bg: #f8b4d0;
       --streak-bg: #ff0066;
+      --heat-0: #fce4ec;
+      --heat-1: #f8bbd0;
+      --heat-2: #f48fb1;
+      --heat-3: #f06292;
+      --heat-4: #e91e63;
     }
     :root[data-theme="blue"] {
       --bg: #0f172a; --card: #1e293b; --accent: #3b82f6; --text: #f8fafc; --muted: #94a3b8; --border: #334155; --badge-bg: rgba(59, 130, 246, 0.2);
+      --heat-0: #1e293b; --heat-1: #1e3a8a; --heat-2: #1d4ed8; --heat-3: #2563eb; --heat-4: #60a5fa;
     }
     :root[data-theme="olive"] {
       --bg: #141a13; --card: #1f271d; --accent: #658354; --text: #f3f6f2; --muted: #a3b899; --border: #354232; --badge-bg: rgba(101, 131, 84, 0.2);
+      --heat-0: #1f271d; --heat-1: #2d3b2a; --heat-2: #4d6440; --heat-3: #658354; --heat-4: #8fb378;
     }
     :root[data-theme="red"] {
       --bg: #1a0909; --card: #2b1212; --accent: #ef4444; --text: #fef2f2; --muted: #f87171; --border: #451a1a; --badge-bg: rgba(239, 68, 68, 0.2);
+      --heat-0: #2b1212; --heat-1: #5c1d1d; --heat-2: #991b1b; --heat-3: #dc2626; --heat-4: #f87171;
     }
     :root[data-theme="black"] {
       --bg: #000000; --card: #121212; --accent: #262626; --text: #ffffff; --muted: #888888; --border: #262626; --badge-bg: rgba(255, 255, 255, 0.1); --streak-bg: #262626;
+      --heat-0: #1a1a1a; --heat-1: #333333; --heat-2: #666666; --heat-3: #999999; --heat-4: #ffffff;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
@@ -76,9 +90,28 @@
     .stats-row { display: flex; gap: 6px; flex-wrap: wrap; font-size: 0.75rem; color: var(--muted); border-top: 1px solid var(--border); padding-top: 8px; margin-top: 2px; }
     .stat-badge { background: var(--badge-bg); border: 1px solid var(--border); padding: 3px 8px; border-radius: 6px; font-weight: 600; color: var(--text); }
     .stat-badge.streak { background: var(--streak-bg, var(--accent)); color: white; border: none; }
+    .stat-badge.tier-1 { background: #3b82f6; color: white; border: none; }
+    .stat-badge.tier-2 { background: #f59e0b; color: white; border: none; }
+    .stat-badge.tier-3 { background: #8b5cf6; color: white; border: none; }
+    .stat-badge.tier-4 { background: #eab308; color: #111827; border: 1px solid #ca8a04; font-weight: 800; }
 
     .delete-btn { background: none; border: none; color: #ef4444; font-size: 1.4rem; cursor: pointer; padding: 0 8px; line-height: 1; }
     .empty-state { text-align: center; color: var(--muted); margin-top: 40px; font-size: 0.9rem; }
+
+    /* Heatmap Section */
+    .heatmap-section { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 20px; }
+    .heatmap-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .heatmap-title { font-size: 0.95rem; font-weight: 600; }
+    .heatmap-score { font-size: 0.8rem; font-weight: 700; color: var(--accent); background: var(--badge-bg); padding: 4px 8px; border-radius: 6px; }
+    .heatmap-container { overflow-x: auto; padding-bottom: 4px; }
+    .heatmap-grid { display: grid; grid-template-rows: repeat(7, 12px); grid-auto-flow: column; grid-auto-columns: 12px; gap: 3px; }
+    .heatmap-cell { width: 12px; height: 12px; border-radius: 2px; background: var(--heat-0); cursor: pointer; }
+    .heatmap-cell[data-level="1"] { background: var(--heat-1); }
+    .heatmap-cell[data-level="2"] { background: var(--heat-2); }
+    .heatmap-cell[data-level="3"] { background: var(--heat-3); }
+    .heatmap-cell[data-level="4"] { background: var(--heat-4); }
+    .heatmap-legend { display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 8px; font-size: 0.7rem; color: var(--muted); }
+    .legend-box { width: 10px; height: 10px; border-radius: 2px; }
 
     /* Apple-Style Calendar View */
     .cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
@@ -104,6 +137,16 @@
     .theme-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
     .theme-btn { padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-weight: 600; cursor: pointer; text-align: center; }
     .theme-btn.active { border: 2px solid var(--accent); }
+
+    /* Reward Modal */
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 200; justify-content: center; align-items: center; padding: 20px; }
+    .modal-overlay.active { display: flex; }
+    .modal-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; text-align: center; max-width: 320px; width: 100%; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+    @keyframes popIn { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+    .modal-icon { font-size: 3rem; margin-bottom: 12px; }
+    .modal-title { font-size: 1.3rem; font-weight: 700; margin-bottom: 6px; }
+    .modal-desc { font-size: 0.9rem; color: var(--muted); margin-bottom: 20px; line-height: 1.4; }
+    .modal-btn { background: var(--accent); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; }
   </style>
 </head>
 <body>
@@ -130,6 +173,25 @@
 
   <!-- CALENDAR VIEW -->
   <div id="calendarView" class="tab-content">
+    <div class="heatmap-section">
+      <div class="heatmap-header">
+        <span class="heatmap-title">Activity Heatmap</span>
+        <span class="heatmap-score" id="consistencyScore">0% Consistency</span>
+      </div>
+      <div class="heatmap-container">
+        <div class="heatmap-grid" id="heatmapGrid"></div>
+      </div>
+      <div class="heatmap-legend">
+        <span>Less</span>
+        <div class="legend-box" style="background: var(--heat-0)"></div>
+        <div class="legend-box" style="background: var(--heat-1)"></div>
+        <div class="legend-box" style="background: var(--heat-2)"></div>
+        <div class="legend-box" style="background: var(--heat-3)"></div>
+        <div class="legend-box" style="background: var(--heat-4)"></div>
+        <span>More</span>
+      </div>
+    </div>
+
     <div class="cal-header">
       <h2 id="calMonthTitle"></h2>
       <div class="cal-nav">
@@ -165,6 +227,16 @@
         <button class="theme-btn" onclick="setTheme('red')">Red</button>
         <button class="theme-btn" onclick="setTheme('black')">Black</button>
       </div>
+    </div>
+  </div>
+
+  <!-- REWARD MODAL -->
+  <div class="modal-overlay" id="rewardModal">
+    <div class="modal-card">
+      <div class="modal-icon" id="rewardIcon">⚡</div>
+      <div class="modal-title" id="rewardTitle">Milestone Unlocked!</div>
+      <div class="modal-desc" id="rewardDesc">You hit a new streak milestone. Keep up the momentum!</div>
+      <button class="modal-btn" onclick="closeRewardModal()">Awesome!</button>
     </div>
   </div>
 
@@ -227,6 +299,7 @@
       } else if (view === 'calendar') {
         document.getElementById('calendarView').classList.add('active');
         document.getElementById('itemCalendar').classList.add('active');
+        renderHeatmap();
         renderCalendar();
       } else if (view === 'manage') {
         document.getElementById('manageView').classList.add('active');
@@ -246,6 +319,34 @@
       document.querySelectorAll('.theme-btn').forEach(btn => {
         btn.classList.toggle('active', btn.getAttribute('onclick').includes(`'${theme}'`));
       });
+    }
+
+    /* REWARD MODAL & MILESTONE SYSTEM */
+    function checkMilestones(previousStreak, newStreak, habitName) {
+      const milestones = [
+        { days: 365, title: "Iron Will", icon: "👑", desc: `Incredible! You hit a 365-day streak on ${habitName}! You've built true mastery.`, tier: 4 },
+        { days: 100, title: "Centurion", icon: "🛡️", desc: `100 days of ${habitName}! You've reached elite consistency.`, tier: 3 },
+        { days: 30, title: "Flame Tier", icon: "🔥", desc: `30-Day Streak on ${habitName}! A full month of total commitment.`, tier: 2 },
+        { days: 7, title: "Spark Tier", icon: "⚡", desc: `7-Day Streak on ${habitName}! You've built solid momentum.`, tier: 1 }
+      ];
+
+      for (let m of milestones) {
+        if (previousStreak < m.days && newStreak >= m.days) {
+          showRewardModal(m.icon, m.title, m.desc);
+          break;
+        }
+      }
+    }
+
+    function showRewardModal(icon, title, desc) {
+      document.getElementById('rewardIcon').textContent = icon;
+      document.getElementById('rewardTitle').textContent = title;
+      document.getElementById('rewardDesc').textContent = desc;
+      document.getElementById('rewardModal').classList.add('active');
+    }
+
+    function closeRewardModal() {
+      document.getElementById('rewardModal').classList.remove('active');
     }
 
     /* STATS & TODAY VIEW */
@@ -282,8 +383,26 @@
 
       const daysInMonth = getDaysInCurrentMonth();
 
+      let badgeClass = "streak";
+      let badgeLabel = `🔥 ${streak} day streak`;
+      if (streak >= 365) {
+        badgeClass = "streak tier-4";
+        badgeLabel = `👑 ${streak}d (Iron Will)`;
+      } else if (streak >= 100) {
+        badgeClass = "streak tier-3";
+        badgeLabel = `🛡️ ${streak}d (Centurion)`;
+      } else if (streak >= 30) {
+        badgeClass = "streak tier-2";
+        badgeLabel = `🔥 ${streak}d (Flame)`;
+      } else if (streak >= 7) {
+        badgeClass = "streak tier-1";
+        badgeLabel = `⚡ ${streak}d (Spark)`;
+      }
+
       return {
         streak,
+        badgeClass,
+        badgeLabel,
         week: `${countInRange(7)}/${Math.min(7, totalDaysActive)}`,
         month: `${countInRange(daysInMonth)}/${Math.min(daysInMonth, totalDaysActive)}`,
         year: `${countInRange(365)}/${Math.min(365, totalDaysActive)}`
@@ -295,11 +414,19 @@
       habits = habits.map(h => {
         if (h.id === id) {
           let history = h.history || [];
+          const oldStats = calculateStats(history, h.createdAt);
+          
           if (history.includes(targetDate)) {
             history = history.filter(d => d !== targetDate);
           } else {
             history.push(targetDate);
           }
+
+          const newStats = calculateStats(history, h.createdAt);
+          if (targetDate === getTodayString()) {
+            checkMilestones(oldStats.streak, newStats.streak, h.name);
+          }
+
           return { ...h, history };
         }
         return h;
@@ -307,6 +434,7 @@
       save();
 
       if (customDateStr) {
+        renderHeatmap();
         renderCalendar();
       } else {
         renderToday();
@@ -338,7 +466,7 @@
             </div>
           </div>
           <div class="stats-row">
-            <span class="stat-badge streak">🔥 ${stats.streak} day streak</span>
+            <span class="stat-badge ${stats.badgeClass}">${stats.badgeLabel}</span>
             <span class="stat-badge">7d: ${stats.week}</span>
             <span class="stat-badge">30d: ${stats.month}</span>
             <span class="stat-badge">365d: ${stats.year}</span>
@@ -346,6 +474,71 @@
         `;
         todayList.appendChild(card);
       });
+    }
+
+    /* HEATMAP RENDER */
+    function renderHeatmap() {
+      const container = document.getElementById('heatmapGrid');
+      container.innerHTML = '';
+
+      const today = new Date();
+      const totalDays = 364; // 52 weeks * 7 days
+      const startDate = new Date(today);
+      startDate.setDate(today.getDate() - totalDays);
+
+      let totalCompletions30d = 0;
+      let totalPossible30d = 0;
+
+      for (let i = 0; i <= totalDays; i++) {
+        const d = new Date(startDate);
+        d.setDate(startDate.getDate() + i);
+        const dStr = d.toISOString().split('T')[0];
+
+        const totalHabits = habits.length;
+        let completedCount = 0;
+
+        if (totalHabits > 0) {
+          habits.forEach(h => {
+            if ((h.history || []).includes(dStr)) completedCount++;
+          });
+        }
+
+        const ratio = totalHabits > 0 ? completedCount / totalHabits : 0;
+        let level = 0;
+        if (ratio > 0 && ratio <= 0.25) level = 1;
+        else if (ratio > 0.25 && ratio <= 0.5) level = 2;
+        else if (ratio > 0.5 && ratio <= 0.75) level = 3;
+        else if (ratio > 0.75) level = 4;
+
+        const cell = document.createElement('div');
+        cell.className = 'heatmap-cell';
+        cell.setAttribute('data-level', level);
+        cell.title = `${dStr}: ${completedCount}/${totalHabits} completed`;
+        cell.onclick = () => selectCalDate(dStr);
+
+        container.appendChild(cell);
+
+        // Calculate 30-day consistency score
+        const diffDays = (today - d) / (1000 * 60 * 60 * 24);
+        if (diffDays >= 0 && diffDays < 30) {
+          totalCompletions30d += completedCount;
+          totalPossible30d += totalHabits;
+        }
+      }
+
+      const scoreElem = document.getElementById('consistencyScore');
+      if (totalPossible30d > 0) {
+        const percentage = Math.round((totalCompletions30d / totalPossible30d) * 100);
+        scoreElem.textContent = `${percentage}% Consistency (30d)`;
+      } else {
+        scoreElem.textContent = `0% Consistency`;
+      }
+
+      // Auto-scroll heatmap to the right (current date)
+      setTimeout(() => {
+        const scrollContainer = document.querySelector('.heatmap-container');
+        if (scrollContainer) scrollContainer.scrollLeft = scrollContainer.scrollWidth;
+      }, 50);
     }
 
     /* CALENDAR FUNCTIONALITY */
@@ -356,6 +549,8 @@
 
     function selectCalDate(dateStr) {
       selectedCalDateStr = dateStr;
+      const [y, m] = dateStr.split('-');
+      calDate = new Date(y, m - 1, 1);
       renderCalendar();
     }
 
