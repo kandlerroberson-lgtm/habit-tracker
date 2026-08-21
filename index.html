@@ -1,726 +1,427 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Daily Habits</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meteorological Calendar Heatmap App</title>
   <style>
-    /* Global Heatmap Palette (Palest Yellow -> Yellow -> Orange -> Red -> Dark Red) */
     :root {
-      --heat-0: #fefce8;
-      --heat-1: #fde047;
-      --heat-2: #f97316;
-      --heat-3: #ef4444;
-      --heat-4: #991b1b;
+      --bg-color: #f0f2f5;
+      --card-bg: #ffffff;
+      --text-main: #1a1a1a;
+      --text-muted: #666666;
+      --border-color: rgba(0, 0, 0, 0.12);
+      --accent-color: #d90429;
+      --radius: 12px;
     }
 
-    /* Theme Presets */
-    :root[data-theme="white"] {
-      --bg: #ffffff;
-      --card: #f8fafc;
-      --accent: #2563eb;
-      --text: #0f172a;
-      --muted: #64748b;
-      --border: #e2e8f0;
-      --badge-bg: rgba(37, 99, 235, 0.1);
-    }
-    :root[data-theme="kirby"] {
-      --bg: #fff5f8;
-      --card: #ffdeeb;
-      --accent: #ff4d94;
-      --text: #4a0e2e;
-      --muted: #b85280;
-      --border: #fca5c5;
-      --badge-bg: #f8b4d0;
-      --streak-bg: #ff0066;
-    }
-    :root[data-theme="blue"] {
-      --bg: #0f172a; --card: #1e293b; --accent: #3b82f6; --text: #f8fafc; --muted: #94a3b8; --border: #334155; --badge-bg: rgba(59, 130, 246, 0.2);
-    }
-    :root[data-theme="olive"] {
-      --bg: #141a13; --card: #1f271d; --accent: #658354; --text: #f3f6f2; --muted: #a3b899; --border: #354232; --badge-bg: rgba(101, 131, 84, 0.2);
-    }
-    :root[data-theme="red"] {
-      --bg: #1a0909; --card: #2b1212; --accent: #ef4444; --text: #fef2f2; --muted: #f87171; --border: #451a1a; --badge-bg: rgba(239, 68, 68, 0.2);
-    }
-    :root[data-theme="black"] {
-      --bg: #000000; --card: #121212; --accent: #262626; --text: #ffffff; --muted: #888888; --border: #262626; --badge-bg: rgba(255, 255, 255, 0.1); --streak-bg: #262626;
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background: var(--bg); color: var(--text); padding: 20px; max-width: 480px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; transition: background 0.3s, color 0.3s; }
-    
-    /* Header & Hamburger Menu */
-    header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; position: relative; }
-    h1 { font-size: 1.6rem; font-weight: 700; }
-    p.date { color: var(--muted); font-size: 0.9rem; margin-top: 2px; }
-
-    .menu-btn { background: var(--card); border: 1px solid var(--border); color: var(--text); font-size: 1.4rem; padding: 6px 12px; border-radius: 8px; cursor: pointer; }
-    
-    .dropdown-menu { display: none; position: absolute; top: 100%; right: 0; background: var(--card); border: 1px solid var(--border); border-radius: 10px; width: 180px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); z-index: 100; margin-top: 8px; overflow: hidden; }
-    .dropdown-menu.active { display: block; }
-    .dropdown-item { width: 100%; padding: 12px 16px; text-align: left; background: none; border: none; color: var(--text); font-size: 0.95rem; font-weight: 500; cursor: pointer; border-bottom: 1px solid var(--border); }
-    .dropdown-item:last-child { border-bottom: none; }
-    .dropdown-item:hover, .dropdown-item.active { background: var(--accent); color: var(--text); }
-
-    /* Views */
-    .tab-content { display: none; }
-    .tab-content.active { display: block; }
-
-    /* Inputs & Buttons */
-    .input-group { display: flex; gap: 8px; margin-bottom: 20px; }
-    input[type="text"] { flex: 1; padding: 12px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 1rem; outline: none; }
-    button.add-btn { background: var(--accent); color: white; border: 1px solid var(--border); padding: 12px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; }
-
-    /* Lists */
-    .habit-list { display: flex; flex-direction: column; gap: 12px; }
-    .habit-card { background: var(--card); padding: 14px; border-radius: 10px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px; transition: background 0.3s; }
-    .habit-main { display: flex; align-items: center; justify-content: space-between; }
-    .habit-left { display: flex; align-items: center; gap: 12px; }
-    .habit-checkbox { width: 22px; height: 22px; accent-color: var(--accent); cursor: pointer; }
-    .habit-name { font-size: 1rem; font-weight: 500; }
-    .habit-name.completed { text-decoration: line-through; color: var(--muted); opacity: 0.7; }
-    
-    /* Analytics & Badges */
-    .stats-row { display: flex; gap: 6px; flex-wrap: wrap; font-size: 0.75rem; color: var(--muted); border-top: 1px solid var(--border); padding-top: 8px; margin-top: 2px; }
-    .stat-badge { background: var(--badge-bg); border: 1px solid var(--border); padding: 3px 8px; border-radius: 6px; font-weight: 600; color: var(--text); }
-    .stat-badge.streak { background: var(--streak-bg, var(--accent)); color: white; border: none; }
-    .stat-badge.tier-1 { background: #3b82f6; color: white; border: none; }
-    .stat-badge.tier-2 { background: #f59e0b; color: white; border: none; }
-    .stat-badge.tier-3 { background: #8b5cf6; color: white; border: none; }
-    .stat-badge.tier-4 { background: #eab308; color: #111827; border: 1px solid #ca8a04; font-weight: 800; }
-
-    .delete-btn { background: none; border: none; color: #ef4444; font-size: 1.4rem; cursor: pointer; padding: 0 8px; line-height: 1; }
-    .empty-state { text-align: center; color: var(--muted); margin-top: 40px; font-size: 0.9rem; }
-
-    /* Heatmap Section */
-    .heatmap-section { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 20px; }
-    .heatmap-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-    .heatmap-title { font-size: 0.95rem; font-weight: 600; }
-    .heatmap-score { font-size: 0.8rem; font-weight: 700; color: var(--accent); background: var(--badge-bg); padding: 4px 8px; border-radius: 6px; }
-    .heatmap-container { overflow-x: auto; padding-bottom: 4px; }
-    .heatmap-grid { display: grid; grid-template-rows: repeat(7, 12px); grid-auto-flow: column; grid-auto-columns: 12px; gap: 3px; }
-    .heatmap-cell { width: 12px; height: 12px; border-radius: 2px; background: var(--heat-0); cursor: pointer; }
-    .heatmap-cell[data-level="1"] { background: var(--heat-1); }
-    .heatmap-cell[data-level="2"] { background: var(--heat-2); }
-    .heatmap-cell[data-level="3"] { background: var(--heat-3); }
-    .heatmap-cell[data-level="4"] { background: var(--heat-4); }
-    .heatmap-legend { display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 8px; font-size: 0.7rem; color: var(--muted); }
-    .legend-box { width: 10px; height: 10px; border-radius: 2px; }
-
-    /* Apple-Style Calendar View */
-    .cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-    .cal-header h2 { font-size: 1.1rem; font-weight: 600; }
-    .cal-nav { display: flex; gap: 6px; }
-    .cal-nav button { background: var(--card); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 4px 10px; cursor: pointer; font-weight: 600; }
-    
-    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; text-align: center; }
-    .cal-day-label { font-size: 0.75rem; font-weight: 600; color: var(--muted); padding-bottom: 4px; }
-    .cal-cell { 
-      background: var(--heat-0); 
-      border: 1px solid var(--border); 
-      border-radius: 8px; 
-      aspect-ratio: 1; 
-      display: flex; 
-      flex-direction: column; 
-      align-items: center; 
-      justify-content: center; 
-      cursor: pointer; 
-      font-size: 0.85rem; 
-      font-weight: 600; 
-      color: #334155;
-      position: relative; 
-      transition: transform 0.1s, outline 0.1s;
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
     }
-    .cal-cell[data-level="0"] { background: var(--heat-0); color: #475569; }
-    .cal-cell[data-level="1"] { background: var(--heat-1); color: #0f172a; }
-    .cal-cell[data-level="2"] { background: var(--heat-2); color: #ffffff; }
-    .cal-cell[data-level="3"] { background: var(--heat-3); color: #ffffff; }
-    .cal-cell[data-level="4"] { background: var(--heat-4); color: #ffffff; }
 
-    .cal-cell.empty { background: transparent !important; border: none; cursor: default; }
-    .cal-cell.today { border: 2px solid var(--accent); font-weight: 800; }
-    .cal-cell.selected { outline: 3px solid var(--text); outline-offset: -3px; font-weight: 800; }
+    /* Top Application Header */
+    .app-header {
+      background: #ffffff;
+      border-bottom: 1px solid var(--border-color);
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
 
-    .cal-editor { margin-top: 20px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
-    .cal-editor-title { font-size: 0.95rem; font-weight: 600; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 8px; display: flex; justify-content: space-between; }
+    .app-header h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
 
-    /* Settings View */
-    .settings-group { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
-    .settings-title { font-size: 1rem; font-weight: 600; margin-bottom: 12px; }
-    .theme-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-    .theme-btn { padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-weight: 600; cursor: pointer; text-align: center; }
-    .theme-btn.active { border: 2px solid var(--accent); }
+    .app-header span {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
 
-    /* Reward Modal */
-    .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 200; justify-content: center; align-items: center; padding: 20px; }
-    .modal-overlay.active { display: flex; }
-    .modal-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; text-align: center; max-width: 320px; width: 100%; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-    @keyframes popIn { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
-    .modal-icon { font-size: 3rem; margin-bottom: 12px; }
-    .modal-title { font-size: 1.3rem; font-weight: 700; margin-bottom: 6px; }
-    .modal-desc { font-size: 0.9rem; color: var(--muted); margin-bottom: 20px; line-height: 1.4; }
-    .modal-btn { background: var(--accent); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; }
+    /* Main Workspace Layout */
+    .app-container {
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      gap: 24px;
+      max-width: 1200px;
+      width: 100%;
+      margin: 24px auto;
+      padding: 0 16px;
+      flex-grow: 1;
+    }
+
+    @media (max-width: 850px) {
+      .app-container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Primary Card: Calendar View */
+    .calendar-card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .calendar-title-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .day-headers {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      text-align: center;
+      font-weight: 600;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .calendar-viewport {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 7 / 5;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+      background-color: #ffffff;
+    }
+
+    /* Canvas Rendering Background */
+    #heatCanvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      filter: blur(24px) saturate(1.2);
+      transform: scale(1.08);
+      pointer-events: none;
+    }
+
+    /* Interactive Calendar Grid Overlay */
+    .calendar-grid {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      grid-template-rows: repeat(5, 1fr);
+      z-index: 2;
+    }
+
+    .day-cell {
+      border-right: 1px solid var(--border-color);
+      border-bottom: 1px solid var(--border-color);
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.15s ease;
+    }
+
+    .day-cell:nth-child(7n) { border-right: none; }
+    .day-cell:nth-last-child(-n+7) { border-bottom: none; }
+
+    .day-cell:hover {
+      background: rgba(0, 0, 0, 0.05);
+    }
+
+    .date-num {
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+    }
+
+    .val-num {
+      font-size: 0.75rem;
+      font-weight: 600;
+      align-self: flex-end;
+      text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+    }
+
+    /* Sidebar / Controls Panel */
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .panel {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    }
+
+    .panel h3 {
+      font-size: 0.95rem;
+      margin-bottom: 12px;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 8px;
+    }
+
+    .control-group {
+      margin-bottom: 12px;
+    }
+
+    .control-group label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .control-group input[type="range"] {
+      width: 100%;
+    }
+
+    .stats-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 0.85rem;
+    }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .stat-row strong {
+      color: var(--text-main);
+    }
+
+    /* Heat Map Legend Bar */
+    .legend-bar {
+      height: 10px;
+      border-radius: 5px;
+      margin: 8px 0;
+      background: linear-gradient(to right, 
+        #ffffff 0%, 
+        #ffeea1 25%, 
+        #ff9900 50%, 
+        #d90429 75%, 
+        #4a000a 100%
+      );
+      border: 1px solid var(--border-color);
+    }
+
+    .legend-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
   </style>
 </head>
 <body>
 
-  <header>
-    <div>
-      <h1 id="viewTitle">Today</h1>
-      <p class="date" id="currentDate"></p>
-    </div>
-    <button class="menu-btn" onclick="toggleMenu()">&#9776;</button>
-    
-    <div class="dropdown-menu" id="dropdownMenu">
-      <button class="dropdown-item active" id="itemToday" onclick="navigate('today', 'Today')">Today</button>
-      <button class="dropdown-item" id="itemCalendar" onclick="navigate('calendar', 'Calendar')">Calendar History</button>
-      <button class="dropdown-item" id="itemManage" onclick="navigate('manage', 'Manage Habits')">Manage Habits</button>
-      <button class="dropdown-item" id="itemSettings" onclick="navigate('settings', 'Settings')">Settings</button>
-    </div>
+  <header class="app-header">
+    <h1>Monthly Thermal Analysis</h1>
+    <span>Meteorological View</span>
   </header>
 
-  <!-- TODAY VIEW -->
-  <div id="todayView" class="tab-content active">
-    <div class="habit-list" id="todayList"></div>
-  </div>
-
-  <!-- CALENDAR VIEW -->
-  <div id="calendarView" class="tab-content">
-    <div class="heatmap-section">
-      <div class="heatmap-header">
-        <span class="heatmap-title">Activity Heatmap</span>
-        <span class="heatmap-score" id="consistencyScore">0% Consistency</span>
+  <div class="app-container">
+    <!-- Calendar View Block -->
+    <main class="calendar-card">
+      <div class="calendar-title-bar">
+        <h2>October 2026</h2>
       </div>
-      <div class="heatmap-container">
-        <div class="heatmap-grid" id="heatmapGrid"></div>
-      </div>
-      <div class="heatmap-legend">
-        <span>Less</span>
-        <div class="legend-box" style="background: var(--heat-0)"></div>
-        <div class="legend-box" style="background: var(--heat-1)"></div>
-        <div class="legend-box" style="background: var(--heat-2)"></div>
-        <div class="legend-box" style="background: var(--heat-3)"></div>
-        <div class="legend-box" style="background: var(--heat-4)"></div>
-        <span>More</span>
-      </div>
-    </div>
 
-    <div class="cal-header">
-      <h2 id="calMonthTitle"></h2>
-      <div class="cal-nav">
-        <button onclick="changeMonth(-1)">&lt;</button>
-        <button onclick="changeMonth(1)">&gt;</button>
+      <div class="day-headers">
+        <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
       </div>
-    </div>
-    <div class="cal-grid" id="calGrid"></div>
-    <div class="cal-editor" id="calEditor">
-      <div class="cal-editor-title" id="selectedDateTitle">Select a date</div>
-      <div class="habit-list" id="calHabitList"></div>
-    </div>
-  </div>
 
-  <!-- MANAGE VIEW -->
-  <div id="manageView" class="tab-content">
-    <div class="input-group">
-      <input type="text" id="habitInput" placeholder="Add a new habit..." />
-      <button class="add-btn" id="addBtn">Add</button>
-    </div>
-    <div class="habit-list" id="manageList"></div>
-  </div>
-
-  <!-- SETTINGS VIEW -->
-  <div id="settingsView" class="tab-content">
-    <div class="settings-group">
-      <div class="settings-title">Color Theme</div>
-      <div class="theme-grid">
-        <button class="theme-btn" onclick="setTheme('white')">White / Light</button>
-        <button class="theme-btn" onclick="setTheme('kirby')">Kirby Pink</button>
-        <button class="theme-btn" onclick="setTheme('blue')">Dark Blue</button>
-        <button class="theme-btn" onclick="setTheme('olive')">Olive</button>
-        <button class="theme-btn" onclick="setTheme('red')">Red</button>
-        <button class="theme-btn" onclick="setTheme('black')">Black</button>
+      <div class="calendar-viewport">
+        <canvas id="heatCanvas"></canvas>
+        <div class="calendar-grid" id="grid"></div>
       </div>
-    </div>
-  </div>
+    </main>
 
-  <!-- REWARD MODAL -->
-  <div class="modal-overlay" id="rewardModal">
-    <div class="modal-card">
-      <div class="modal-icon" id="rewardIcon">⚡</div>
-      <div class="modal-title" id="rewardTitle">Milestone Unlocked!</div>
-      <div class="modal-desc" id="rewardDesc">You hit a new streak milestone. Keep up the momentum!</div>
-      <button class="modal-btn" onclick="closeRewardModal()">Awesome!</button>
-    </div>
+    <!-- Sidebar Control & Stats Panel -->
+    <aside class="sidebar">
+      <div class="panel">
+        <h3>Visualization Controls</h3>
+        <div class="control-group">
+          <label>Blur Intensity <span id="blurVal">24px</span></label>
+          <input type="range" id="blurInput" min="5" max="40" value="24">
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Monthly Summary</h3>
+        <div class="stats-list">
+          <div class="stat-row"><span>Peak Hotspot:</span><strong id="statMax">100%</strong></div>
+          <div class="stat-row"><span>Lowest Day:</span><strong id="statMin">0%</strong></div>
+          <div class="stat-row"><span>Monthly Average:</span><strong id="statAvg">37%</strong></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Color Scale</h3>
+        <div class="legend-bar"></div>
+        <div class="legend-labels">
+          <span>0% (White)</span>
+          <span>50% (Orange)</span>
+          <span>100% (Dark Red)</span>
+        </div>
+      </div>
+    </aside>
   </div>
 
   <script>
-    function getTodayString() {
-      const now = new Date();
-      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    }
+    // 35 cells (7 days x 5 weeks) representing the month layout
+    const dayValues = [
+      10,  15,  25,  40,  65,  85,  95,
+      05,  20,  30,  50,  70,  90, 100,
+      00,  10,  20,  45,  60,  80,  75,
+      05,  15,  35,  55,  70,  60,  40,
+      00,  05,  10,  20,  30,  25,  10
+    ];
 
-    function getDaysInCurrentMonth() {
-      const now = new Date();
-      return new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    }
+    const COLS = 7;
+    const ROWS = 5;
 
-    let habits = [];
-    try {
-      habits = JSON.parse(localStorage.getItem('my_habits')) || [];
-    } catch (e) {
-      habits = [];
-    }
-
-    let calDate = new Date();
-    let selectedCalDateStr = getTodayString();
-
-    const savedTheme = localStorage.getItem('my_theme') || 'white';
-    setTheme(savedTheme);
-
-    document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-US', {
-      weekday: 'long', month: 'short', day: 'numeric'
-    });
-
-    function save() {
-      localStorage.setItem('my_habits', JSON.stringify(habits));
-    }
-
-    /* MENU & NAVIGATION */
-    function toggleMenu() {
-      document.getElementById('dropdownMenu').classList.toggle('active');
-    }
-
-    document.addEventListener('click', (e) => {
-      const menu = document.getElementById('dropdownMenu');
-      const btn = document.querySelector('.menu-btn');
-      if (!menu.contains(e.target) && !btn.contains(e.target)) {
-        menu.classList.remove('active');
-      }
-    });
-
-    function navigate(view, title) {
-      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-      document.querySelectorAll('.dropdown-item').forEach(el => el.classList.remove('active'));
-      
-      document.getElementById('viewTitle').textContent = title;
-      document.getElementById('dropdownMenu').classList.remove('active');
-
-      if (view === 'today') {
-        document.getElementById('todayView').classList.add('active');
-        document.getElementById('itemToday').classList.add('active');
-        renderToday();
-      } else if (view === 'calendar') {
-        document.getElementById('calendarView').classList.add('active');
-        document.getElementById('itemCalendar').classList.add('active');
-        renderHeatmap();
-        renderCalendar();
-      } else if (view === 'manage') {
-        document.getElementById('manageView').classList.add('active');
-        document.getElementById('itemManage').classList.add('active');
-        renderManage();
-      } else if (view === 'settings') {
-        document.getElementById('settingsView').classList.add('active');
-        document.getElementById('itemSettings').classList.add('active');
-      }
-    }
-
-    /* THEME SYSTEM */
-    function setTheme(theme) {
-      document.documentElement.setAttribute('data-theme', theme);
-      localStorage.setItem('my_theme', theme);
-      
-      document.querySelectorAll('.theme-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.getAttribute('onclick').includes(`'${theme}'`));
-      });
-    }
-
-    /* REWARD MODAL & MILESTONE SYSTEM */
-    function checkMilestones(previousStreak, newStreak, habitName) {
-      const milestones = [
-        { days: 365, title: "Iron Will", icon: "👑", desc: `Incredible! You hit a 365-day streak on ${habitName}! You've built true mastery.`, tier: 4 },
-        { days: 100, title: "Centurion", icon: "🛡️", desc: `100 days of ${habitName}! You've reached elite consistency.`, tier: 3 },
-        { days: 30, title: "Flame Tier", icon: "🔥", desc: `30-Day Streak on ${habitName}! A full month of total commitment.`, tier: 2 },
-        { days: 7, title: "Spark Tier", icon: "⚡", desc: `7-Day Streak on ${habitName}! You've built solid momentum.`, tier: 1 }
+    // Color Interpolation (White -> Yellow -> Orange -> Red -> Dark Red)
+    function getColorForValue(val) {
+      const norm = Math.max(0, Math.min(100, val)) / 100;
+      const stops = [
+        { p: 0.00, r: 255, g: 255, b: 255 }, // White
+        { p: 0.25, r: 255, g: 238, b: 161 }, // Yellow
+        { p: 0.50, r: 255, g: 153, b: 0   }, // Orange
+        { p: 0.75, r: 217, g: 4,   b: 41  }, // Red
+        { p: 1.00, r: 74,  g: 0,   b: 10  }  // Dark Red
       ];
 
-      for (let m of milestones) {
-        if (previousStreak < m.days && newStreak >= m.days) {
-          showRewardModal(m.icon, m.title, m.desc);
-          break;
-        }
-      }
-    }
-
-    function showRewardModal(icon, title, desc) {
-      document.getElementById('rewardIcon').textContent = icon;
-      document.getElementById('rewardTitle').textContent = title;
-      document.getElementById('rewardDesc').textContent = desc;
-      document.getElementById('rewardModal').classList.add('active');
-    }
-
-    function closeRewardModal() {
-      document.getElementById('rewardModal').classList.remove('active');
-    }
-
-    /* STATS & TODAY VIEW */
-    function calculateStats(history, createdAt) {
-      const todayStr = getTodayString();
-      const today = new Date(todayStr);
-      const created = new Date(createdAt || todayStr);
-      
-      const totalDaysActive = Math.max(1, Math.floor((today - created) / (1000 * 60 * 60 * 24)) + 1);
-
-      let streak = 0;
-      let checkDate = new Date(today);
-      if (!history.includes(todayStr)) {
-        checkDate.setDate(checkDate.getDate() - 1);
-      }
-      
-      while (true) {
-        const dateStr = checkDate.toISOString().split('T')[0];
-        if (history.includes(dateStr)) {
-          streak++;
-          checkDate.setDate(checkDate.getDate() - 1);
-        } else {
+      let lower = stops[0], upper = stops[stops.length - 1];
+      for (let i = 0; i < stops.length - 1; i++) {
+        if (norm >= stops[i].p && norm <= stops[i + 1].p) {
+          lower = stops[i];
+          upper = stops[i + 1];
           break;
         }
       }
 
-      function countInRange(days) {
-        return history.filter(dStr => {
-          const d = new Date(dStr);
-          const diffDays = (today - d) / (1000 * 60 * 60 * 24);
-          return diffDays >= 0 && diffDays < days;
-        }).length;
-      }
-
-      const daysInMonth = getDaysInCurrentMonth();
-
-      let badgeClass = "streak";
-      let badgeLabel = `🔥 ${streak} day streak`;
-      if (streak >= 365) {
-        badgeClass = "streak tier-4";
-        badgeLabel = `👑 ${streak}d (Iron Will)`;
-      } else if (streak >= 100) {
-        badgeClass = "streak tier-3";
-        badgeLabel = `🛡️ ${streak}d (Centurion)`;
-      } else if (streak >= 30) {
-        badgeClass = "streak tier-2";
-        badgeLabel = `🔥 ${streak}d (Flame)`;
-      } else if (streak >= 7) {
-        badgeClass = "streak tier-1";
-        badgeLabel = `⚡ ${streak}d (Spark)`;
-      }
-
+      const factor = (upper.p - lower.p) === 0 ? 0 : (norm - lower.p) / (upper.p - lower.p);
       return {
-        streak,
-        badgeClass,
-        badgeLabel,
-        week: `${countInRange(7)}/${Math.min(7, totalDaysActive)}`,
-        month: `${countInRange(daysInMonth)}/${Math.min(daysInMonth, totalDaysActive)}`,
-        year: `${countInRange(365)}/${Math.min(365, totalDaysActive)}`
+        r: Math.round(lower.r + factor * (upper.r - lower.r)),
+        g: Math.round(lower.g + factor * (upper.g - lower.g)),
+        b: Math.round(lower.b + factor * (upper.b - lower.b))
       };
     }
 
-    function toggleHabit(id, customDateStr = null) {
-      const targetDate = customDateStr || getTodayString();
-      habits = habits.map(h => {
-        if (h.id === id) {
-          let history = h.history || [];
-          const oldStats = calculateStats(history, h.createdAt);
-          
-          if (history.includes(targetDate)) {
-            history = history.filter(d => d !== targetDate);
-          } else {
-            history.push(targetDate);
-          }
-
-          const newStats = calculateStats(history, h.createdAt);
-          if (targetDate === getTodayString()) {
-            checkMilestones(oldStats.streak, newStats.streak, h.name);
-          }
-
-          return { ...h, history };
-        }
-        return h;
-      });
-      save();
-
-      if (customDateStr) {
-        renderHeatmap();
-        renderCalendar();
-      } else {
-        renderToday();
-      }
-    }
-
-    function renderToday() {
-      const todayList = document.getElementById('todayList');
-      const today = getTodayString();
-      todayList.innerHTML = '';
-
-      if (habits.length === 0) {
-        todayList.innerHTML = '<p class="empty-state">No habits set up yet. Tap <b>&#9776;</b> and go to <b>Manage Habits</b> to add some!</p>';
-        return;
-      }
-
-      habits.forEach(h => {
-        const history = h.history || [];
-        const isChecked = history.includes(today);
-        const stats = calculateStats(history, h.createdAt);
-
-        const card = document.createElement('div');
-        card.className = 'habit-card';
-        card.innerHTML = `
-          <div class="habit-main">
-            <div class="habit-left">
-              <input type="checkbox" class="habit-checkbox" ${isChecked ? 'checked' : ''} onchange="toggleHabit(${h.id})">
-              <span class="habit-name ${isChecked ? 'completed' : ''}">${h.name}</span>
-            </div>
-          </div>
-          <div class="stats-row">
-            <span class="stat-badge ${stats.badgeClass}">${stats.badgeLabel}</span>
-            <span class="stat-badge">7d: ${stats.week}</span>
-            <span class="stat-badge">30d: ${stats.month}</span>
-            <span class="stat-badge">365d: ${stats.year}</span>
-          </div>
-        `;
-        todayList.appendChild(card);
-      });
-    }
-
-    /* HEATMAP RENDER */
     function renderHeatmap() {
-      const container = document.getElementById('heatmapGrid');
-      container.innerHTML = '';
+      const canvas = document.getElementById('heatCanvas');
+      const ctx = canvas.getContext('2d');
+      const container = canvas.parentElement;
 
-      const today = new Date();
-      const totalDays = 364; // 52 weeks * 7 days
-      const startDate = new Date(today);
-      startDate.setDate(today.getDate() - totalDays);
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+      canvas.width = width;
+      canvas.height = height;
 
-      let totalCompletions30d = 0;
-      let totalPossible30d = 0;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, width, height);
 
-      for (let i = 0; i <= totalDays; i++) {
-        const d = new Date(startDate);
-        d.setDate(startDate.getDate() + i);
-        const dStr = d.toISOString().split('T')[0];
+      const cellW = width / COLS;
+      const cellH = height / ROWS;
+      const radius = Math.max(cellW, cellH) * 1.3;
 
-        const totalHabits = habits.length;
-        let completedCount = 0;
+      dayValues.forEach((val, idx) => {
+        const col = idx % COLS;
+        const row = Math.floor(idx / COLS);
+        const centerX = col * cellW + cellW / 2;
+        const centerY = row * cellH + cellH / 2;
 
-        if (totalHabits > 0) {
-          habits.forEach(h => {
-            if ((h.history || []).includes(dStr)) completedCount++;
-          });
-        }
+        const color = getColorForValue(val);
+        const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
 
-        const ratio = totalHabits > 0 ? completedCount / totalHabits : 0;
-        let level = 0;
-        if (completedCount > 0) {
-          if (ratio <= 0.25) level = 1;
-          else if (ratio <= 0.5) level = 2;
-          else if (ratio <= 0.75) level = 3;
-          else level = 4;
-        }
+        gradient.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, 0.9)`);
+        gradient.addColorStop(0.7, `rgba(${color.r}, ${color.g}, ${color.b}, 0.4)`);
+        gradient.addColorStop(1, `rgba(${color.r}, ${color.g}, ${color.b}, 0)`);
 
-        const cell = document.createElement('div');
-        cell.className = 'heatmap-cell';
-        cell.setAttribute('data-level', level);
-        cell.title = `${dStr}: ${completedCount}/${totalHabits} completed`;
-        cell.onclick = () => selectCalDate(dStr);
-
-        container.appendChild(cell);
-
-        // Calculate 30-day consistency score
-        const diffDays = (today - d) / (1000 * 60 * 60 * 24);
-        if (diffDays >= 0 && diffDays < 30) {
-          totalCompletions30d += completedCount;
-          totalPossible30d += totalHabits;
-        }
-      }
-
-      const scoreElem = document.getElementById('consistencyScore');
-      if (totalPossible30d > 0) {
-        const percentage = Math.round((totalCompletions30d / totalPossible30d) * 100);
-        scoreElem.textContent = `${percentage}% Consistency (30d)`;
-      } else {
-        scoreElem.textContent = `0% Consistency`;
-      }
-
-      // Auto-scroll heatmap to the right (current date)
-      setTimeout(() => {
-        const scrollContainer = document.querySelector('.heatmap-container');
-        if (scrollContainer) scrollContainer.scrollLeft = scrollContainer.scrollWidth;
-      }, 50);
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+        ctx.fill();
+      });
     }
 
-    /* CALENDAR FUNCTIONALITY */
-    function changeMonth(delta) {
-      calDate.setMonth(calDate.getMonth() + delta);
-      renderCalendar();
-    }
-
-    function selectCalDate(dateStr) {
-      selectedCalDateStr = dateStr;
-      const [y, m] = dateStr.split('-');
-      calDate = new Date(y, m - 1, 1);
-      renderCalendar();
-    }
-
-    function renderCalendar() {
-      const grid = document.getElementById('calGrid');
+    function buildGrid() {
+      const grid = document.getElementById('grid');
       grid.innerHTML = '';
 
-      const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-      const dayNames = ["S", "M", "T", "W", "T", "F", "S"];
+      dayValues.forEach((val, idx) => {
+        const dayCell = document.createElement('div');
+        dayCell.className = 'day-cell';
 
-      document.getElementById('calMonthTitle').textContent = `${monthNames[calDate.getMonth()]} ${calDate.getFullYear()}`;
+        const dateNum = document.createElement('span');
+        dateNum.className = 'date-num';
+        dateNum.textContent = idx + 1 <= 31 ? idx + 1 : '';
 
-      dayNames.forEach(d => {
-        const label = document.createElement('div');
-        label.className = 'cal-day-label';
-        label.textContent = d;
-        grid.appendChild(label);
-      });
+        const valNum = document.createElement('span');
+        valNum.className = 'val-num';
+        valNum.textContent = idx + 1 <= 31 ? `${val}%` : '';
 
-      const year = calDate.getFullYear();
-      const month = calDate.getMonth();
-      const firstDayIdx = new Date(year, month, 1).getDay();
-      const totalDays = new Date(year, month + 1, 0).getDate();
-
-      for (let i = 0; i < firstDayIdx; i++) {
-        const emptyCell = document.createElement('div');
-        emptyCell.className = 'cal-cell empty';
-        grid.appendChild(emptyCell);
-      }
-
-      const todayStr = getTodayString();
-
-      for (let d = 1; d <= totalDays; d++) {
-        const dStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-        
-        // Calculate completion consistency level for this day
-        const totalHabits = habits.length;
-        let completedCount = 0;
-        if (totalHabits > 0) {
-          habits.forEach(h => {
-            if ((h.history || []).includes(dStr)) completedCount++;
-          });
-        }
-
-        const ratio = totalHabits > 0 ? completedCount / totalHabits : 0;
-        let level = 0;
-        if (completedCount > 0) {
-          if (ratio <= 0.25) level = 1;
-          else if (ratio <= 0.5) level = 2;
-          else if (ratio <= 0.75) level = 3;
-          else level = 4;
-        }
-
-        const cell = document.createElement('div');
-        cell.className = 'cal-cell';
-        cell.setAttribute('data-level', level);
-
-        if (dStr === todayStr) cell.classList.add('today');
-        if (dStr === selectedCalDateStr) cell.classList.add('selected');
-
-        cell.textContent = d;
-        cell.onclick = () => selectCalDate(dStr);
-
-        grid.appendChild(cell);
-      }
-
-      renderCalEditor();
-    }
-
-    function renderCalEditor() {
-      const calHabitList = document.getElementById('calHabitList');
-      const title = document.getElementById('selectedDateTitle');
-      calHabitList.innerHTML = '';
-
-      const [y, m, d] = selectedCalDateStr.split('-');
-      const formattedDate = new Date(y, m - 1, d).toLocaleDateString('en-US', {
-        month: 'short', day: 'numeric', year: 'numeric'
-      });
-
-      title.textContent = `Habits for ${formattedDate}`;
-
-      if (habits.length === 0) {
-        calHabitList.innerHTML = '<p class="empty-state">No habits created yet.</p>';
-        return;
-      }
-
-      habits.forEach(h => {
-        const history = h.history || [];
-        const isChecked = history.includes(selectedCalDateStr);
-
-        const card = document.createElement('div');
-        card.className = 'habit-card';
-        card.innerHTML = `
-          <div class="habit-main">
-            <div class="habit-left">
-              <input type="checkbox" class="habit-checkbox" ${isChecked ? 'checked' : ''} onchange="toggleHabit(${h.id}, '${selectedCalDateStr}')">
-              <span class="habit-name ${isChecked ? 'completed' : ''}">${h.name}</span>
-            </div>
-          </div>
-        `;
-        calHabitList.appendChild(card);
+        dayCell.appendChild(dateNum);
+        dayCell.appendChild(valNum);
+        grid.appendChild(dayCell);
       });
     }
 
-    /* MANAGE VIEW */
-    function addHabit() {
-      const input = document.getElementById('habitInput');
-      const name = input.value.trim();
-      if (!name) return;
-      habits.push({
-        id: Date.now(),
-        name: name,
-        createdAt: getTodayString(),
-        history: []
-      });
-      input.value = '';
-      save();
-      renderManage();
+    function calculateStats() {
+      const validVals = dayValues.slice(0, 31);
+      const max = Math.max(...validVals);
+      const min = Math.min(...validVals);
+      const avg = Math.round(validVals.reduce((a, b) => a + b, 0) / validVals.length);
+
+      document.getElementById('statMax').textContent = `${max}%`;
+      document.getElementById('statMin').textContent = `${min}%`;
+      document.getElementById('statAvg').textContent = `${avg}%`;
     }
 
-    function deleteHabit(id) {
-      habits = habits.filter(h => h.id !== id);
-      save();
-      renderManage();
-    }
+    // Dynamic Control Event Handlers
+    const blurInput = document.getElementById('blurInput');
+    const blurVal = document.getElementById('blurVal');
+    const canvas = document.getElementById('heatCanvas');
 
-    function renderManage() {
-      const manageList = document.getElementById('manageList');
-      manageList.innerHTML = '';
-
-      if (habits.length === 0) {
-        manageList.innerHTML = '<p class="empty-state">Your habit list is empty. Type a habit above to start.</p>';
-        return;
-      }
-
-      habits.forEach(h => {
-        const card = document.createElement('div');
-        card.className = 'habit-card';
-        card.innerHTML = `
-          <div class="habit-main">
-            <span class="habit-name">${h.name}</span>
-            <button class="delete-btn" onclick="deleteHabit(${h.id})">&times;</button>
-          </div>
-        `;
-        manageList.appendChild(card);
-      });
-    }
-
-    document.getElementById('addBtn').onclick = addHabit;
-    document.getElementById('habitInput').addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') addHabit();
+    blurInput.addEventListener('input', (e) => {
+      const value = e.target.value;
+      blurVal.textContent = `${value}px`;
+      canvas.style.filter = `blur(${value}px) saturate(1.2)`;
     });
 
-    renderToday();
+    window.addEventListener('load', () => {
+      buildGrid();
+      renderHeatmap();
+      calculateStats();
+    });
+
+    window.addEventListener('resize', renderHeatmap);
   </script>
 </body>
 </html>
