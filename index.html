@@ -7,23 +7,23 @@
   <style>
     /* Theme Presets */
     :root[data-theme="white"] {
-      --bg: #ffffff;          /* Pure white background */
-      --card: #f8fafc;        /* Off-white cards */
-      --accent: #2563eb;      /* Clean blue accent */
-      --text: #0f172a;        /* High-contrast dark text */
-      --muted: #64748b;       /* Soft grey secondary text */
-      --border: #e2e8f0;      /* Subtle border */
+      --bg: #ffffff;
+      --card: #f8fafc;
+      --accent: #2563eb;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #e2e8f0;
       --badge-bg: rgba(37, 99, 235, 0.1);
     }
     :root[data-theme="kirby"] {
-      --bg: #fff5f8;          /* Bright, almost-white soft pastel pink */
-      --card: #ffdeeb;        /* Soft Kirby bubblegum card background */
-      --accent: #ff4d94;      /* Vibrant Kirby pink for buttons & active states */
-      --text: #4a0e2e;        /* Dark berry for high readability */
-      --muted: #b85280;       /* Muted pinkish-purple for secondary text */
-      --border: #fca5c5;      /* Light bubblegum border */
-      --badge-bg: #f8b4d0;    /* Soft pink badge background */
-      --streak-bg: #ff0066;   /* Very saturated, intense electric pink streak badge */
+      --bg: #fff5f8;
+      --card: #ffdeeb;
+      --accent: #ff4d94;
+      --text: #4a0e2e;
+      --muted: #b85280;
+      --border: #fca5c5;
+      --badge-bg: #f8b4d0;
+      --streak-bg: #ff0066;
     }
     :root[data-theme="blue"] {
       --bg: #0f172a; --card: #1e293b; --accent: #3b82f6; --text: #f8fafc; --muted: #94a3b8; --border: #334155; --badge-bg: rgba(59, 130, 246, 0.2);
@@ -80,6 +80,24 @@
     .delete-btn { background: none; border: none; color: #ef4444; font-size: 1.4rem; cursor: pointer; padding: 0 8px; line-height: 1; }
     .empty-state { text-align: center; color: var(--muted); margin-top: 40px; font-size: 0.9rem; }
 
+    /* Apple-Style Calendar View */
+    .cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .cal-header h2 { font-size: 1.1rem; font-weight: 600; }
+    .cal-nav { display: flex; gap: 6px; }
+    .cal-nav button { background: var(--card); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 4px 10px; cursor: pointer; font-weight: 600; }
+    
+    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; text-align: center; }
+    .cal-day-label { font-size: 0.75rem; font-weight: 600; color: var(--muted); padding-bottom: 4px; }
+    .cal-cell { background: var(--card); border: 1px solid var(--border); border-radius: 8px; aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; font-size: 0.85rem; font-weight: 500; position: relative; }
+    .cal-cell.empty { background: transparent; border: none; cursor: default; }
+    .cal-cell.today { border: 2px solid var(--accent); font-weight: 700; }
+    .cal-cell.selected { background: var(--accent); color: white; border-color: var(--accent); }
+    .cal-dot { width: 4px; height: 4px; background: var(--accent); border-radius: 50%; position: absolute; bottom: 4px; }
+    .cal-cell.selected .cal-dot { background: white; }
+
+    .cal-editor { margin-top: 20px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+    .cal-editor-title { font-size: 0.95rem; font-weight: 600; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 8px; display: flex; justify-content: space-between; }
+
     /* Settings View */
     .settings-group { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
     .settings-title { font-size: 1rem; font-weight: 600; margin-bottom: 12px; }
@@ -99,6 +117,7 @@
     
     <div class="dropdown-menu" id="dropdownMenu">
       <button class="dropdown-item active" id="itemToday" onclick="navigate('today', 'Today')">Today</button>
+      <button class="dropdown-item" id="itemCalendar" onclick="navigate('calendar', 'Calendar')">Calendar History</button>
       <button class="dropdown-item" id="itemManage" onclick="navigate('manage', 'Manage Habits')">Manage Habits</button>
       <button class="dropdown-item" id="itemSettings" onclick="navigate('settings', 'Settings')">Settings</button>
     </div>
@@ -107,6 +126,22 @@
   <!-- TODAY VIEW -->
   <div id="todayView" class="tab-content active">
     <div class="habit-list" id="todayList"></div>
+  </div>
+
+  <!-- CALENDAR VIEW -->
+  <div id="calendarView" class="tab-content">
+    <div class="cal-header">
+      <h2 id="calMonthTitle"></h2>
+      <div class="cal-nav">
+        <button onclick="changeMonth(-1)">&lt;</button>
+        <button onclick="changeMonth(1)">&gt;</button>
+      </div>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div class="cal-editor" id="calEditor">
+      <div class="cal-editor-title" id="selectedDateTitle">Select a date</div>
+      <div class="habit-list" id="calHabitList"></div>
+    </div>
   </div>
 
   <!-- MANAGE VIEW -->
@@ -151,7 +186,9 @@
       habits = [];
     }
 
-    // Default to the clear White theme
+    let calDate = new Date();
+    let selectedCalDateStr = getTodayString();
+
     const savedTheme = localStorage.getItem('my_theme') || 'white';
     setTheme(savedTheme);
 
@@ -187,6 +224,10 @@
         document.getElementById('todayView').classList.add('active');
         document.getElementById('itemToday').classList.add('active');
         renderToday();
+      } else if (view === 'calendar') {
+        document.getElementById('calendarView').classList.add('active');
+        document.getElementById('itemCalendar').classList.add('active');
+        renderCalendar();
       } else if (view === 'manage') {
         document.getElementById('manageView').classList.add('active');
         document.getElementById('itemManage').classList.add('active');
@@ -249,22 +290,27 @@
       };
     }
 
-    function toggleHabit(id) {
-      const today = getTodayString();
+    function toggleHabit(id, customDateStr = null) {
+      const targetDate = customDateStr || getTodayString();
       habits = habits.map(h => {
         if (h.id === id) {
           let history = h.history || [];
-          if (history.includes(today)) {
-            history = history.filter(d => d !== today);
+          if (history.includes(targetDate)) {
+            history = history.filter(d => d !== targetDate);
           } else {
-            history.push(today);
+            history.push(targetDate);
           }
           return { ...h, history };
         }
         return h;
       });
       save();
-      renderToday();
+
+      if (customDateStr) {
+        renderCalendar();
+      } else {
+        renderToday();
+      }
     }
 
     function renderToday() {
@@ -299,6 +345,104 @@
           </div>
         `;
         todayList.appendChild(card);
+      });
+    }
+
+    /* CALENDAR FUNCTIONALITY */
+    function changeMonth(delta) {
+      calDate.setMonth(calDate.getMonth() + delta);
+      renderCalendar();
+    }
+
+    function selectCalDate(dateStr) {
+      selectedCalDateStr = dateStr;
+      renderCalendar();
+    }
+
+    function renderCalendar() {
+      const grid = document.getElementById('calGrid');
+      grid.innerHTML = '';
+
+      const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+      const dayNames = ["S", "M", "T", "W", "T", "F", "S"];
+
+      document.getElementById('calMonthTitle').textContent = `${monthNames[calDate.getMonth()]} ${calDate.getFullYear()}`;
+
+      dayNames.forEach(d => {
+        const label = document.createElement('div');
+        label.className = 'cal-day-label';
+        label.textContent = d;
+        grid.appendChild(label);
+      });
+
+      const year = calDate.getFullYear();
+      const month = calDate.getMonth();
+      const firstDayIdx = new Date(year, month, 1).getDay();
+      const totalDays = new Date(year, month + 1, 0).getDate();
+
+      for (let i = 0; i < firstDayIdx; i++) {
+        const emptyCell = document.createElement('div');
+        emptyCell.className = 'cal-cell empty';
+        grid.appendChild(emptyCell);
+      }
+
+      const todayStr = getTodayString();
+
+      for (let d = 1; d <= totalDays; d++) {
+        const dStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const cell = document.createElement('div');
+        cell.className = 'cal-cell';
+        if (dStr === todayStr) cell.classList.add('today');
+        if (dStr === selectedCalDateStr) cell.classList.add('selected');
+
+        cell.textContent = d;
+        cell.onclick = () => selectCalDate(dStr);
+
+        const hasCompletions = habits.some(h => (h.history || []).includes(dStr));
+        if (hasCompletions) {
+          const dot = document.createElement('div');
+          dot.className = 'cal-dot';
+          cell.appendChild(dot);
+        }
+
+        grid.appendChild(cell);
+      }
+
+      renderCalEditor();
+    }
+
+    function renderCalEditor() {
+      const calHabitList = document.getElementById('calHabitList');
+      const title = document.getElementById('selectedDateTitle');
+      calHabitList.innerHTML = '';
+
+      const [y, m, d] = selectedCalDateStr.split('-');
+      const formattedDate = new Date(y, m - 1, d).toLocaleDateString('en-US', {
+        month: 'short', day: 'numeric', year: 'numeric'
+      });
+
+      title.textContent = `Habits for ${formattedDate}`;
+
+      if (habits.length === 0) {
+        calHabitList.innerHTML = '<p class="empty-state">No habits created yet.</p>';
+        return;
+      }
+
+      habits.forEach(h => {
+        const history = h.history || [];
+        const isChecked = history.includes(selectedCalDateStr);
+
+        const card = document.createElement('div');
+        card.className = 'habit-card';
+        card.innerHTML = `
+          <div class="habit-main">
+            <div class="habit-left">
+              <input type="checkbox" class="habit-checkbox" ${isChecked ? 'checked' : ''} onchange="toggleHabit(${h.id}, '${selectedCalDateStr}')">
+              <span class="habit-name ${isChecked ? 'completed' : ''}">${h.name}</span>
+            </div>
+          </div>
+        `;
+        calHabitList.appendChild(card);
       });
     }
 
