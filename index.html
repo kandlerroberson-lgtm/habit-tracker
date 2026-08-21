@@ -1,655 +1,726 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Daily Habits - Thermal Heatmap Edition</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Daily Habits</title>
   <style>
+    /* Global Heatmap Palette (Palest Yellow -> Yellow -> Orange -> Red -> Dark Red) */
     :root {
-      --bg-main: #f8fafc;
-      --card-bg: #ffffff;
-      --text-main: #0f172a;
-      --text-muted: #64748b;
-      --border-color: #e2e8f0;
+      --heat-0: #fefce8;
+      --heat-1: #fde047;
+      --heat-2: #f97316;
+      --heat-3: #ef4444;
+      --heat-4: #991b1b;
+    }
+
+    /* Theme Presets */
+    :root[data-theme="white"] {
+      --bg: #ffffff;
+      --card: #f8fafc;
       --accent: #2563eb;
-      --accent-hover: #1d4ed8;
-      --accent-light: #eff6ff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --badge-bg: rgba(37, 99, 235, 0.1);
+    }
+    :root[data-theme="kirby"] {
+      --bg: #fff5f8;
+      --card: #ffdeeb;
+      --accent: #ff4d94;
+      --text: #4a0e2e;
+      --muted: #b85280;
+      --border: #fca5c5;
+      --badge-bg: #f8b4d0;
+      --streak-bg: #ff0066;
+    }
+    :root[data-theme="blue"] {
+      --bg: #0f172a; --card: #1e293b; --accent: #3b82f6; --text: #f8fafc; --muted: #94a3b8; --border: #334155; --badge-bg: rgba(59, 130, 246, 0.2);
+    }
+    :root[data-theme="olive"] {
+      --bg: #141a13; --card: #1f271d; --accent: #658354; --text: #f3f6f2; --muted: #a3b899; --border: #354232; --badge-bg: rgba(101, 131, 84, 0.2);
+    }
+    :root[data-theme="red"] {
+      --bg: #1a0909; --card: #2b1212; --accent: #ef4444; --text: #fef2f2; --muted: #f87171; --border: #451a1a; --badge-bg: rgba(239, 68, 68, 0.2);
+    }
+    :root[data-theme="black"] {
+      --bg: #000000; --card: #121212; --accent: #262626; --text: #ffffff; --muted: #888888; --border: #262626; --badge-bg: rgba(255, 255, 255, 0.1); --streak-bg: #262626;
     }
 
-    [data-theme="kirby"] {
-      --bg-main: #fff0f5;
-      --card-bg: #ffffff;
-      --text-main: #4a1525;
-      --text-muted: #9c5270;
-      --border-color: #fbcfe8;
-      --accent: #ec4899;
-      --accent-hover: #db2777;
-      --accent-light: #fce7f3;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg); color: var(--text); padding: 20px; max-width: 480px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; transition: background 0.3s, color 0.3s; }
+    
+    /* Header & Hamburger Menu */
+    header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; position: relative; }
+    h1 { font-size: 1.6rem; font-weight: 700; }
+    p.date { color: var(--muted); font-size: 0.9rem; margin-top: 2px; }
 
-    [data-theme="dark-blue"] {
-      --bg-main: #0f172a;
-      --card-bg: #1e293b;
-      --text-main: #f8fafc;
-      --text-muted: #94a3b8;
-      --border-color: #334155;
-      --accent: #38bdf8;
-      --accent-hover: #0284c7;
-      --accent-light: #1e3a5f;
-    }
+    .menu-btn { background: var(--card); border: 1px solid var(--border); color: var(--text); font-size: 1.4rem; padding: 6px 12px; border-radius: 8px; cursor: pointer; }
+    
+    .dropdown-menu { display: none; position: absolute; top: 100%; right: 0; background: var(--card); border: 1px solid var(--border); border-radius: 10px; width: 180px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); z-index: 100; margin-top: 8px; overflow: hidden; }
+    .dropdown-menu.active { display: block; }
+    .dropdown-item { width: 100%; padding: 12px 16px; text-align: left; background: none; border: none; color: var(--text); font-size: 0.95rem; font-weight: 500; cursor: pointer; border-bottom: 1px solid var(--border); }
+    .dropdown-item:last-child { border-bottom: none; }
+    .dropdown-item:hover, .dropdown-item.active { background: var(--accent); color: var(--text); }
 
-    [data-theme="olive"] {
-      --bg-main: #f4f5f0;
-      --card-bg: #ffffff;
-      --text-main: #273022;
-      --text-muted: #606c5a;
-      --border-color: #e0e5da;
-      --accent: #556b2f;
-      --accent-hover: #3b4a20;
-      --accent-light: #ecefe6;
-    }
+    /* Views */
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
 
-    [data-theme="red"] {
-      --bg-main: #fef2f2;
-      --card-bg: #ffffff;
-      --text-main: #450a0a;
-      --text-muted: #991b1b;
-      --border-color: #fecaca;
-      --accent: #dc2626;
-      --accent-hover: #b91c1c;
-      --accent-light: #fee2e2;
-    }
+    /* Inputs & Buttons */
+    .input-group { display: flex; gap: 8px; margin-bottom: 20px; }
+    input[type="text"] { flex: 1; padding: 12px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 1rem; outline: none; }
+    button.add-btn { background: var(--accent); color: white; border: 1px solid var(--border); padding: 12px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; }
 
-    [data-theme="black"] {
-      --bg-main: #09090b;
-      --card-bg: #18181b;
-      --text-main: #fafafa;
-      --text-muted: #a1a1aa;
-      --border-color: #27272a;
-      --accent: #e4e4e7;
-      --accent-hover: #ffffff;
-      --accent-light: #27272a;
-    }
+    /* Lists */
+    .habit-list { display: flex; flex-direction: column; gap: 12px; }
+    .habit-card { background: var(--card); padding: 14px; border-radius: 10px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px; transition: background 0.3s; }
+    .habit-main { display: flex; align-items: center; justify-content: space-between; }
+    .habit-left { display: flex; align-items: center; gap: 12px; }
+    .habit-checkbox { width: 22px; height: 22px; accent-color: var(--accent); cursor: pointer; }
+    .habit-name { font-size: 1rem; font-weight: 500; }
+    .habit-name.completed { text-decoration: line-through; color: var(--muted); opacity: 0.7; }
+    
+    /* Analytics & Badges */
+    .stats-row { display: flex; gap: 6px; flex-wrap: wrap; font-size: 0.75rem; color: var(--muted); border-top: 1px solid var(--border); padding-top: 8px; margin-top: 2px; }
+    .stat-badge { background: var(--badge-bg); border: 1px solid var(--border); padding: 3px 8px; border-radius: 6px; font-weight: 600; color: var(--text); }
+    .stat-badge.streak { background: var(--streak-bg, var(--accent)); color: white; border: none; }
+    .stat-badge.tier-1 { background: #3b82f6; color: white; border: none; }
+    .stat-badge.tier-2 { background: #f59e0b; color: white; border: none; }
+    .stat-badge.tier-3 { background: #8b5cf6; color: white; border: none; }
+    .stat-badge.tier-4 { background: #eab308; color: #111827; border: 1px solid #ca8a04; font-weight: 800; }
 
-    body {
-      background-color: var(--bg-main);
-      color: var(--text-main);
-      transition: background-color 0.2s, color 0.2s;
-    }
+    .delete-btn { background: none; border: none; color: #ef4444; font-size: 1.4rem; cursor: pointer; padding: 0 8px; line-height: 1; }
+    .empty-state { text-align: center; color: var(--muted); margin-top: 40px; font-size: 0.9rem; }
 
-    .app-card {
-      background-color: var(--card-bg);
-      border-color: var(--border-color);
-    }
+    /* Heatmap Section */
+    .heatmap-section { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 20px; }
+    .heatmap-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .heatmap-title { font-size: 0.95rem; font-weight: 600; }
+    .heatmap-score { font-size: 0.8rem; font-weight: 700; color: var(--accent); background: var(--badge-bg); padding: 4px 8px; border-radius: 6px; }
+    .heatmap-container { overflow-x: auto; padding-bottom: 4px; }
+    .heatmap-grid { display: grid; grid-template-rows: repeat(7, 12px); grid-auto-flow: column; grid-auto-columns: 12px; gap: 3px; }
+    .heatmap-cell { width: 12px; height: 12px; border-radius: 2px; background: var(--heat-0); cursor: pointer; }
+    .heatmap-cell[data-level="1"] { background: var(--heat-1); }
+    .heatmap-cell[data-level="2"] { background: var(--heat-2); }
+    .heatmap-cell[data-level="3"] { background: var(--heat-3); }
+    .heatmap-cell[data-level="4"] { background: var(--heat-4); }
+    .heatmap-legend { display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 8px; font-size: 0.7rem; color: var(--muted); }
+    .legend-box { width: 10px; height: 10px; border-radius: 2px; }
 
-    .accent-btn {
-      background-color: var(--accent);
-      color: #ffffff;
+    /* Apple-Style Calendar View */
+    .cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .cal-header h2 { font-size: 1.1rem; font-weight: 600; }
+    .cal-nav { display: flex; gap: 6px; }
+    .cal-nav button { background: var(--card); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 4px 10px; cursor: pointer; font-weight: 600; }
+    
+    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; text-align: center; }
+    .cal-day-label { font-size: 0.75rem; font-weight: 600; color: var(--muted); padding-bottom: 4px; }
+    .cal-cell { 
+      background: var(--heat-0); 
+      border: 1px solid var(--border); 
+      border-radius: 8px; 
+      aspect-ratio: 1; 
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      justify-content: center; 
+      cursor: pointer; 
+      font-size: 0.85rem; 
+      font-weight: 600; 
+      color: #334155;
+      position: relative; 
+      transition: transform 0.1s, outline 0.1s;
     }
-    .accent-btn:hover {
-      background-color: var(--accent-hover);
-    }
+    .cal-cell[data-level="0"] { background: var(--heat-0); color: #475569; }
+    .cal-cell[data-level="1"] { background: var(--heat-1); color: #0f172a; }
+    .cal-cell[data-level="2"] { background: var(--heat-2); color: #ffffff; }
+    .cal-cell[data-level="3"] { background: var(--heat-3); color: #ffffff; }
+    .cal-cell[data-level="4"] { background: var(--heat-4); color: #ffffff; }
 
-    /* Thermal Canvas Positioning */
-    .calendar-container {
-      position: relative;
-      background-color: #ffffff;
-    }
+    .cal-cell.empty { background: transparent !important; border: none; cursor: default; }
+    .cal-cell.today { border: 2px solid var(--accent); font-weight: 800; }
+    .cal-cell.selected { outline: 3px solid var(--text); outline-offset: -3px; font-weight: 800; }
 
-    #thermalCanvas {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 0;
-      pointer-events: none;
-      border-radius: 0.75rem;
-    }
+    .cal-editor { margin-top: 20px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+    .cal-editor-title { font-size: 0.95rem; font-weight: 600; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 8px; display: flex; justify-content: space-between; }
 
-    .calendar-grid {
-      position: relative;
-      z-index: 1;
-    }
+    /* Settings View */
+    .settings-group { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+    .settings-title { font-size: 1rem; font-weight: 600; margin-bottom: 12px; }
+    .theme-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .theme-btn { padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-weight: 600; cursor: pointer; text-align: center; }
+    .theme-btn.active { border: 2px solid var(--accent); }
 
-    .calendar-day-cell {
-      background: rgba(255, 255, 255, 0.35);
-      backdrop-filter: blur(2px);
-      transition: background 0.2s, transform 0.15s;
-    }
-
-    .calendar-day-cell:hover {
-      background: rgba(255, 255, 255, 0.15);
-      transform: translateY(-2px);
-    }
-
-    /* Heatmap Square (Analytics Section) */
-    .heat-tier-0 { background-color: #f8fafc; border: 1px solid #e2e8f0; }
-    .heat-tier-1 { background-color: #fef08a; }
-    .heat-tier-2 { background-color: #fde047; }
-    .heat-tier-3 { background-color: #fb923c; }
-    .heat-tier-4 { background-color: #ef4444; }
-    .heat-tier-5 { background-color: #991b1b; }
+    /* Reward Modal */
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 200; justify-content: center; align-items: center; padding: 20px; }
+    .modal-overlay.active { display: flex; }
+    .modal-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; text-align: center; max-width: 320px; width: 100%; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+    @keyframes popIn { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+    .modal-icon { font-size: 3rem; margin-bottom: 12px; }
+    .modal-title { font-size: 1.3rem; font-weight: 700; margin-bottom: 6px; }
+    .modal-desc { font-size: 0.9rem; color: var(--muted); margin-bottom: 20px; line-height: 1.4; }
+    .modal-btn { background: var(--accent); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; }
   </style>
 </head>
-<body class="min-h-screen pb-12 font-sans antialiased">
+<body>
 
-  <!-- Header / Navigation -->
-  <header class="border-b app-card sticky top-0 z-30 shadow-sm">
-    <div class="max-w-5xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-      <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-xl accent-btn flex items-center justify-center font-bold text-lg shadow">
-          D
-        </div>
-        <h1 class="text-xl font-bold tracking-tight">Daily Habits</h1>
-      </div>
-
-      <!-- Navigation Tabs -->
-      <nav class="flex items-center gap-1 p-1 rounded-xl bg-black/5 dark:bg-white/5 text-sm font-medium">
-        <button onclick="switchTab('today')" id="tab-today" class="px-4 py-2 rounded-lg transition-all">Today</button>
-        <button onclick="switchTab('calendar')" id="tab-calendar" class="px-4 py-2 rounded-lg transition-all">Calendar Map</button>
-        <button onclick="switchTab('analytics')" id="tab-analytics" class="px-4 py-2 rounded-lg transition-all">Analytics</button>
-        <button onclick="switchTab('habits')" id="tab-habits" class="px-4 py-2 rounded-lg transition-all">Habits</button>
-        <button onclick="switchTab('settings')" id="tab-settings" class="px-4 py-2 rounded-lg transition-all">Settings</button>
-      </nav>
+  <header>
+    <div>
+      <h1 id="viewTitle">Today</h1>
+      <p class="date" id="currentDate"></p>
+    </div>
+    <button class="menu-btn" onclick="toggleMenu()">&#9776;</button>
+    
+    <div class="dropdown-menu" id="dropdownMenu">
+      <button class="dropdown-item active" id="itemToday" onclick="navigate('today', 'Today')">Today</button>
+      <button class="dropdown-item" id="itemCalendar" onclick="navigate('calendar', 'Calendar')">Calendar History</button>
+      <button class="dropdown-item" id="itemManage" onclick="navigate('manage', 'Manage Habits')">Manage Habits</button>
+      <button class="dropdown-item" id="itemSettings" onclick="navigate('settings', 'Settings')">Settings</button>
     </div>
   </header>
 
-  <!-- Main Content Area -->
-  <main class="max-w-5xl mx-auto px-4 mt-8">
+  <!-- TODAY VIEW -->
+  <div id="todayView" class="tab-content active">
+    <div class="habit-list" id="todayList"></div>
+  </div>
 
-    <!-- TODAY VIEW -->
-    <section id="view-today" class="tab-content space-y-6">
-      <div class="flex items-center justify-between">
-        <div>
-          <h2 class="text-2xl font-bold" id="today-date-string">Today</h2>
-          <p class="text-sm opacity-70">Check off your habits for the day</p>
-        </div>
-        <div class="text-right">
-          <span class="text-3xl font-extrabold" id="today-score">0%</span>
-          <p class="text-xs uppercase tracking-wider opacity-60">Completed</p>
-        </div>
+  <!-- CALENDAR VIEW -->
+  <div id="calendarView" class="tab-content">
+    <div class="heatmap-section">
+      <div class="heatmap-header">
+        <span class="heatmap-title">Activity Heatmap</span>
+        <span class="heatmap-score" id="consistencyScore">0% Consistency</span>
       </div>
-
-      <div id="today-checklist" class="space-y-3">
-        <!-- Rendered dynamically -->
+      <div class="heatmap-container">
+        <div class="heatmap-grid" id="heatmapGrid"></div>
       </div>
-    </section>
-
-    <!-- CALENDAR MAP VIEW (THERMAL HEATMAP) -->
-    <section id="view-calendar" class="tab-content hidden space-y-6">
-      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h2 class="text-2xl font-bold">Thermal Consistency Map</h2>
-          <p class="text-sm opacity-70">Hot zones show your high-consistency streaks</p>
-        </div>
-        <div class="flex items-center gap-2">
-          <button onclick="changeMonth(-1)" class="p-2 rounded-lg border app-card hover:opacity-80">← Prev</button>
-          <span id="calendar-month-label" class="text-lg font-bold min-w-[140px] text-center">Month Year</span>
-          <button onclick="changeMonth(1)" class="p-2 rounded-lg border app-card hover:opacity-80">Next →</button>
-        </div>
+      <div class="heatmap-legend">
+        <span>Less</span>
+        <div class="legend-box" style="background: var(--heat-0)"></div>
+        <div class="legend-box" style="background: var(--heat-1)"></div>
+        <div class="legend-box" style="background: var(--heat-2)"></div>
+        <div class="legend-box" style="background: var(--heat-3)"></div>
+        <div class="legend-box" style="background: var(--heat-4)"></div>
+        <span>More</span>
       </div>
+    </div>
 
-      <!-- Thermal Calendar Block -->
-      <div class="calendar-container rounded-2xl border shadow-lg overflow-hidden p-4 sm:p-6">
-        <!-- Thermal Heatmap Canvas Background -->
-        <canvas id="thermalCanvas"></canvas>
-
-        <!-- Calendar Days Overlay -->
-        <div class="calendar-grid">
-          <div class="grid grid-cols-7 gap-2 mb-2 text-center text-xs font-bold uppercase tracking-wider opacity-70">
-            <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
-          </div>
-          <div id="calendar-days-grid" class="grid grid-cols-7 gap-2">
-            <!-- Rendered dynamically -->
-          </div>
-        </div>
+    <div class="cal-header">
+      <h2 id="calMonthTitle"></h2>
+      <div class="cal-nav">
+        <button onclick="changeMonth(-1)">&lt;</button>
+        <button onclick="changeMonth(1)">&gt;</button>
       </div>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div class="cal-editor" id="calEditor">
+      <div class="cal-editor-title" id="selectedDateTitle">Select a date</div>
+      <div class="habit-list" id="calHabitList"></div>
+    </div>
+  </div>
 
-      <!-- Thermal Legend -->
-      <div class="flex items-center justify-center gap-3 text-xs font-medium opacity-80 pt-2">
-        <span>Low (0%)</span>
-        <div class="flex items-center gap-1">
-          <span class="w-4 h-4 rounded border bg-white inline-block"></span>
-          <span class="w-4 h-4 rounded bg-yellow-300 inline-block"></span>
-          <span class="w-4 h-4 rounded bg-orange-500 inline-block"></span>
-          <span class="w-4 h-4 rounded bg-red-600 inline-block"></span>
-          <span class="w-4 h-4 rounded bg-red-900 inline-block"></span>
-        </div>
-        <span>High Zone (100%)</span>
-      </div>
-    </section>
+  <!-- MANAGE VIEW -->
+  <div id="manageView" class="tab-content">
+    <div class="input-group">
+      <input type="text" id="habitInput" placeholder="Add a new habit..." />
+      <button class="add-btn" id="addBtn">Add</button>
+    </div>
+    <div class="habit-list" id="manageList"></div>
+  </div>
 
-    <!-- ANALYTICS VIEW -->
-    <section id="view-analytics" class="tab-content hidden space-y-6">
-      <h2 class="text-2xl font-bold">Performance Analytics</h2>
-      
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div class="app-card border rounded-2xl p-5 shadow-sm">
-          <p class="text-xs uppercase tracking-wider opacity-60">Current Streak</p>
-          <p class="text-3xl font-extrabold mt-1" id="stat-current-streak">0 Days</p>
-        </div>
-        <div class="app-card border rounded-2xl p-5 shadow-sm">
-          <p class="text-xs uppercase tracking-wider opacity-60">30-Day Score</p>
-          <p class="text-3xl font-extrabold mt-1" id="stat-30day-score">0%</p>
-        </div>
-        <div class="app-card border rounded-2xl p-5 shadow-sm">
-          <p class="text-xs uppercase tracking-wider opacity-60">Milestone Rank</p>
-          <p class="text-3xl font-extrabold mt-1" id="stat-milestone">Spark</p>
-        </div>
-      </div>
-
-      <!-- 52-Week Heatmap -->
-      <div class="app-card border rounded-2xl p-6 shadow-sm">
-        <h3 class="text-lg font-bold mb-4">52-Week Activity Grid</h3>
-        <div id="year-heatmap" class="flex flex-wrap gap-1 max-h-60 overflow-x-auto p-1">
-          <!-- Rendered dynamically -->
-        </div>
-      </div>
-    </section>
-
-    <!-- HABITS MANAGEMENT VIEW -->
-    <section id="view-habits" class="tab-content hidden space-y-6">
-      <div class="flex items-center justify-between">
-        <h2 class="text-2xl font-bold">Manage Habits</h2>
-        <button onclick="openHabitModal()" class="px-4 py-2 rounded-xl accent-btn font-medium shadow">+ Add Habit</button>
-      </div>
-
-      <div id="habits-list" class="space-y-3">
-        <!-- Rendered dynamically -->
-      </div>
-    </section>
-
-    <!-- SETTINGS VIEW -->
-    <section id="view-settings" class="tab-content hidden space-y-6">
-      <h2 class="text-2xl font-bold">Settings & Themes</h2>
-
-      <div class="app-card border rounded-2xl p-6 space-y-4 shadow-sm">
-        <h3 class="text-lg font-bold">Color Theme</h3>
-        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          <button onclick="setTheme('white')" class="p-3 border rounded-xl font-medium text-center hover:opacity-80">White</button>
-          <button onclick="setTheme('kirby')" class="p-3 border rounded-xl font-medium text-center bg-pink-50 text-pink-700 border-pink-200">Kirby</button>
-          <button onclick="setTheme('dark-blue')" class="p-3 border rounded-xl font-medium text-center bg-slate-900 text-sky-400 border-slate-700">Dark Blue</button>
-          <button onclick="setTheme('olive')" class="p-3 border rounded-xl font-medium text-center bg-stone-100 text-amber-900 border-stone-300">Olive</button>
-          <button onclick="setTheme('red')" class="p-3 border rounded-xl font-medium text-center bg-red-50 text-red-700 border-red-200">Red</button>
-          <button onclick="setTheme('black')" class="p-3 border rounded-xl font-medium text-center bg-zinc-950 text-zinc-100 border-zinc-800">Black</button>
-        </div>
-      </div>
-
-      <div class="app-card border rounded-2xl p-6 space-y-4 shadow-sm">
-        <h3 class="text-lg font-bold text-red-600">Data Management</h3>
-        <p class="text-sm opacity-70">Clear all local storage records and reset app habits.</p>
-        <button onclick="resetData()" class="px-4 py-2 rounded-xl bg-red-600 text-white font-medium hover:bg-red-700">Reset All Data</button>
-      </div>
-    </section>
-
-  </main>
-
-  <!-- Add/Edit Habit Modal -->
-  <div id="habit-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="app-card border rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
-      <h3 class="text-xl font-bold" id="modal-title">Add New Habit</h3>
-      <input type="text" id="habit-input-name" placeholder="Habit Name (e.g. Morning Run)" class="w-full px-4 py-2 border rounded-xl bg-transparent outline-none focus:ring-2 focus:ring-blue-500">
-      <div class="flex justify-end gap-2">
-        <button onclick="closeHabitModal()" class="px-4 py-2 rounded-xl border opacity-80">Cancel</button>
-        <button onclick="saveHabit()" class="px-4 py-2 rounded-xl accent-btn">Save</button>
+  <!-- SETTINGS VIEW -->
+  <div id="settingsView" class="tab-content">
+    <div class="settings-group">
+      <div class="settings-title">Color Theme</div>
+      <div class="theme-grid">
+        <button class="theme-btn" onclick="setTheme('white')">White / Light</button>
+        <button class="theme-btn" onclick="setTheme('kirby')">Kirby Pink</button>
+        <button class="theme-btn" onclick="setTheme('blue')">Dark Blue</button>
+        <button class="theme-btn" onclick="setTheme('olive')">Olive</button>
+        <button class="theme-btn" onclick="setTheme('red')">Red</button>
+        <button class="theme-btn" onclick="setTheme('black')">Black</button>
       </div>
     </div>
   </div>
 
+  <!-- REWARD MODAL -->
+  <div class="modal-overlay" id="rewardModal">
+    <div class="modal-card">
+      <div class="modal-icon" id="rewardIcon">⚡</div>
+      <div class="modal-title" id="rewardTitle">Milestone Unlocked!</div>
+      <div class="modal-desc" id="rewardDesc">You hit a new streak milestone. Keep up the momentum!</div>
+      <button class="modal-btn" onclick="closeRewardModal()">Awesome!</button>
+    </div>
+  </div>
+
   <script>
-    // -------------------------------------------------------------
-    // App State & Initialization
-    // -------------------------------------------------------------
-    let state = {
-      habits: JSON.parse(localStorage.getItem('dh_habits')) || [
-        { id: '1', name: 'Morning Walk' },
-        { id: '2', name: 'Read 20 Pages' },
-        { id: '3', name: 'Workout / Mobility' }
-      ],
-      records: JSON.parse(localStorage.getItem('dh_records')) || {}, // Key: YYYY-MM-DD, Value: [habitId1, habitId2]
-      theme: localStorage.getItem('dh_theme') || 'white',
-      currentTab: 'today',
-      calendarDate: new Date()
-    };
-
-    function saveState() {
-      localStorage.setItem('dh_habits', JSON.stringify(state.habits));
-      localStorage.setItem('dh_records', JSON.stringify(state.records));
-      localStorage.setItem('dh_theme', state.theme);
+    function getTodayString() {
+      const now = new Date();
+      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     }
 
-    function init() {
-      setTheme(state.theme);
-      switchTab('today');
-      renderToday();
-      window.addEventListener('resize', () => {
-        if (state.currentTab === 'calendar') renderThermalCalendar();
-      });
+    function getDaysInCurrentMonth() {
+      const now = new Date();
+      return new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
     }
 
-    // -------------------------------------------------------------
-    // Theme Engine
-    // -------------------------------------------------------------
-    function setTheme(themeName) {
-      state.theme = themeName;
-      if (themeName === 'white') {
-        document.documentElement.removeAttribute('data-theme');
-      } else {
-        document.documentElement.setAttribute('data-theme', themeName);
+    let habits = [];
+    try {
+      habits = JSON.parse(localStorage.getItem('my_habits')) || [];
+    } catch (e) {
+      habits = [];
+    }
+
+    let calDate = new Date();
+    let selectedCalDateStr = getTodayString();
+
+    const savedTheme = localStorage.getItem('my_theme') || 'white';
+    setTheme(savedTheme);
+
+    document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-US', {
+      weekday: 'long', month: 'short', day: 'numeric'
+    });
+
+    function save() {
+      localStorage.setItem('my_habits', JSON.stringify(habits));
+    }
+
+    /* MENU & NAVIGATION */
+    function toggleMenu() {
+      document.getElementById('dropdownMenu').classList.toggle('active');
+    }
+
+    document.addEventListener('click', (e) => {
+      const menu = document.getElementById('dropdownMenu');
+      const btn = document.querySelector('.menu-btn');
+      if (!menu.contains(e.target) && !btn.contains(e.target)) {
+        menu.classList.remove('active');
       }
-      saveState();
-    }
+    });
 
-    // -------------------------------------------------------------
-    // Tab Navigation
-    // -------------------------------------------------------------
-    function switchTab(tabName) {
-      state.currentTab = tabName;
-      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-      document.querySelectorAll('nav button').forEach(el => el.classList.remove('accent-btn'));
-
-      document.getElementById(`view-${tabName}`).classList.remove('hidden');
-      document.getElementById(`tab-${tabName}`).classList.add('accent-btn');
-
-      if (tabName === 'today') renderToday();
-      if (tabName === 'calendar') renderThermalCalendar();
-      if (tabName === 'analytics') renderAnalytics();
-      if (tabName === 'habits') renderHabitsList();
-    }
-
-    // Helpers
-    function formatDateKey(date) {
-      const y = date.getFullYear();
-      const m = String(date.getMonth() + 1).padStart(2, '0');
-      const d = String(date.getDate()).padStart(2, '0');
-      return `${y}-${m}-${d}`;
-    }
-
-    function getCompletionRatio(dateKey) {
-      if (!state.habits.length) return 0;
-      const completed = state.records[dateKey] || [];
-      return Math.min(1, completed.length / state.habits.length);
-    }
-
-    // -------------------------------------------------------------
-    // TODAY VIEW LOGIC
-    // -------------------------------------------------------------
-    function renderToday() {
-      const today = new Date();
-      document.getElementById('today-date-string').innerText = today.toLocaleDateString('en-US', {
-        weekday: 'long', month: 'short', day: 'numeric'
-      });
-
-      const dateKey = formatDateKey(today);
-      const completed = state.records[dateKey] || [];
-      const ratio = getCompletionRatio(dateKey);
+    function navigate(view, title) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.dropdown-item').forEach(el => el.classList.remove('active'));
       
-      document.getElementById('today-score').innerText = `${Math.round(ratio * 100)}%`;
+      document.getElementById('viewTitle').textContent = title;
+      document.getElementById('dropdownMenu').classList.remove('active');
 
-      const listContainer = document.getElementById('today-checklist');
-      listContainer.innerHTML = '';
-
-      if (!state.habits.length) {
-        listContainer.innerHTML = `<p class="text-sm opacity-60">No habits added yet. Go to Habits tab to create one!</p>`;
-        return;
+      if (view === 'today') {
+        document.getElementById('todayView').classList.add('active');
+        document.getElementById('itemToday').classList.add('active');
+        renderToday();
+      } else if (view === 'calendar') {
+        document.getElementById('calendarView').classList.add('active');
+        document.getElementById('itemCalendar').classList.add('active');
+        renderHeatmap();
+        renderCalendar();
+      } else if (view === 'manage') {
+        document.getElementById('manageView').classList.add('active');
+        document.getElementById('itemManage').classList.add('active');
+        renderManage();
+      } else if (view === 'settings') {
+        document.getElementById('settingsView').classList.add('active');
+        document.getElementById('itemSettings').classList.add('active');
       }
-
-      state.habits.forEach(habit => {
-        const isDone = completed.includes(habit.id);
-        const item = document.createElement('div');
-        item.className = `app-card border rounded-2xl p-4 flex items-center justify-between cursor-pointer transition-all shadow-sm ${
-          isDone ? 'opacity-80 bg-black/5 dark:bg-white/5' : ''
-        }`;
-        item.onclick = () => toggleHabitToday(habit.id);
-
-        item.innerHTML = `
-          <span class="font-medium ${isDone ? 'line-through opacity-60' : ''}">${habit.name}</span>
-          <div class="w-6 h-6 rounded-lg border flex items-center justify-center transition-all ${
-            isDone ? 'accent-btn border-transparent' : 'border-slate-300'
-          }">
-            ${isDone ? '✓' : ''}
-          </div>
-        `;
-        listContainer.appendChild(item);
-      });
     }
 
-    function toggleHabitToday(habitId) {
-      const dateKey = formatDateKey(new Date());
-      let current = state.records[dateKey] || [];
-      if (current.includes(habitId)) {
-        current = current.filter(id => id !== habitId);
-      } else {
-        current.push(habitId);
-      }
-      state.records[dateKey] = current;
-      saveState();
-      renderToday();
-    }
-
-    // -------------------------------------------------------------
-    // CALENDAR VIEW (THERMAL HEATMAP ENGINE)
-    // -------------------------------------------------------------
-    function changeMonth(delta) {
-      state.calendarDate.setMonth(state.calendarDate.getMonth() + delta);
-      renderThermalCalendar();
-    }
-
-    function renderThermalCalendar() {
-      const year = state.calendarDate.getFullYear();
-      const month = state.calendarDate.getMonth();
-
-      document.getElementById('calendar-month-label').innerText = new Date(year, month).toLocaleDateString('en-US', {
-        month: 'long', year: 'numeric'
-      });
-
-      const firstDayIndex = new Date(year, month, 1).getDay();
-      const totalDays = new Date(year, month + 1, 0).getDate();
-
-      const grid = document.getElementById('calendar-days-grid');
-      grid.innerHTML = '';
-
-      // Empty padding cells
-      for (let i = 0; i < firstDayIndex; i++) {
-        const emptyCell = document.createElement('div');
-        emptyCell.className = 'h-16 sm:h-20 border-transparent';
-        grid.appendChild(emptyCell);
-      }
-
-      const dayElements = [];
-
-      // Day cells
-      for (let d = 1; d <= totalDays; d++) {
-        const currentDate = new Date(year, month, d);
-        const dateKey = formatDateKey(currentDate);
-        const ratio = getCompletionRatio(dateKey);
-
-        const cell = document.createElement('div');
-        cell.className = 'calendar-day-cell h-16 sm:h-20 rounded-xl border p-2 flex flex-col justify-between shadow-sm relative overflow-hidden';
-        
-        const isToday = formatDateKey(new Date()) === dateKey;
-        
-        cell.innerHTML = `
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-bold ${isToday ? 'px-2 py-0.5 rounded-full accent-btn' : ''}">${d}</span>
-            ${ratio > 0 ? `<span class="text-[10px] font-bold opacity-70">${Math.round(ratio * 100)}%</span>` : ''}
-          </div>
-        `;
-
-        grid.appendChild(cell);
-        dayElements.push({ element: cell, ratio: ratio });
-      }
-
-      // Draw Classic Thermal Heatmap Layer on Canvas
-      requestAnimationFrame(() => drawThermalCanvas(dayElements));
-    }
-
-    function drawThermalCanvas(dayElements) {
-      const canvas = document.getElementById('thermalCanvas');
-      const container = canvas.parentElement;
+    /* THEME SYSTEM */
+    function setTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('my_theme', theme);
       
-      const rect = container.getBoundingClientRect();
-      canvas.width = rect.width;
-      canvas.height = rect.height;
+      document.querySelectorAll('.theme-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('onclick').includes(`'${theme}'`));
+      });
+    }
 
-      const ctx = canvas.getContext('2d');
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    /* REWARD MODAL & MILESTONE SYSTEM */
+    function checkMilestones(previousStreak, newStreak, habitName) {
+      const milestones = [
+        { days: 365, title: "Iron Will", icon: "👑", desc: `Incredible! You hit a 365-day streak on ${habitName}! You've built true mastery.`, tier: 4 },
+        { days: 100, title: "Centurion", icon: "🛡️", desc: `100 days of ${habitName}! You've reached elite consistency.`, tier: 3 },
+        { days: 30, title: "Flame Tier", icon: "🔥", desc: `30-Day Streak on ${habitName}! A full month of total commitment.`, tier: 2 },
+        { days: 7, title: "Spark Tier", icon: "⚡", desc: `7-Day Streak on ${habitName}! You've built solid momentum.`, tier: 1 }
+      ];
 
-      if (!dayElements.length) return;
-
-      // Render radial heat spots behind each day
-      dayElements.forEach(({ element, ratio }) => {
-        if (ratio <= 0) return;
-
-        const elRect = element.getBoundingClientRect();
-        const centerX = (elRect.left - rect.left) + elRect.width / 2;
-        const centerY = (elRect.top - rect.top) + elRect.height / 2;
-
-        // Radius scales with consistency heat
-        const radius = Math.max(elRect.width, elRect.height) * (0.8 + ratio * 0.6);
-
-        const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
-
-        // Classic Thermal Scale Color Mapping
-        if (ratio > 0.8) {
-          gradient.addColorStop(0, 'rgba(153, 27, 27, 0.85)');   // Dark Red Core
-          gradient.addColorStop(0.5, 'rgba(220, 38, 38, 0.6)');  // Red
-          gradient.addColorStop(0.8, 'rgba(249, 115, 22, 0.3)'); // Orange
-        } else if (ratio > 0.6) {
-          gradient.addColorStop(0, 'rgba(220, 38, 38, 0.8)');   // Red Core
-          gradient.addColorStop(0.6, 'rgba(249, 115, 22, 0.4)'); // Orange
-        } else if (ratio > 0.4) {
-          gradient.addColorStop(0, 'rgba(249, 115, 22, 0.75)'); // Orange Core
-          gradient.addColorStop(0.7, 'rgba(253, 224, 71, 0.35)');// Yellow
-        } else if (ratio > 0.2) {
-          gradient.addColorStop(0, 'rgba(253, 224, 71, 0.7)');  // Yellow Core
-          gradient.addColorStop(0.8, 'rgba(255, 255, 255, 0.2)');// White Blend
-        } else {
-          gradient.addColorStop(0, 'rgba(255, 255, 255, 0.6)'); // Cool White Zone
+      for (let m of milestones) {
+        if (previousStreak < m.days && newStreak >= m.days) {
+          showRewardModal(m.icon, m.title, m.desc);
+          break;
         }
-
-        gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-
-        ctx.fillStyle = gradient;
-        ctx.beginPath();
-        ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
-        ctx.fill();
-      });
+      }
     }
 
-    // -------------------------------------------------------------
-    // ANALYTICS & HABITS MANAGEMENT
-    // -------------------------------------------------------------
-    function renderAnalytics() {
-      // Calculate 30-day average
-      let sumRatio = 0;
-      const today = new Date();
-      for (let i = 0; i < 30; i++) {
-        const d = new Date();
-        d.setDate(today.getDate() - i);
-        sumRatio += getCompletionRatio(formatDateKey(d));
-      }
-      const score30 = Math.round((sumRatio / 30) * 100);
-      document.getElementById('stat-30day-score').innerText = `${score30}%`;
+    function showRewardModal(icon, title, desc) {
+      document.getElementById('rewardIcon').textContent = icon;
+      document.getElementById('rewardTitle').textContent = title;
+      document.getElementById('rewardDesc').textContent = desc;
+      document.getElementById('rewardModal').classList.add('active');
+    }
 
-      // Milestone
-      let rank = 'Spark';
-      if (score30 >= 85) rank = 'Iron Will';
-      else if (score30 >= 65) rank = 'Centurion';
-      else if (score30 >= 40) rank = 'Flame';
-      document.getElementById('stat-milestone').innerText = rank;
+    function closeRewardModal() {
+      document.getElementById('rewardModal').classList.remove('active');
+    }
 
-      // Streak calculation
+    /* STATS & TODAY VIEW */
+    function calculateStats(history, createdAt) {
+      const todayStr = getTodayString();
+      const today = new Date(todayStr);
+      const created = new Date(createdAt || todayStr);
+      
+      const totalDaysActive = Math.max(1, Math.floor((today - created) / (1000 * 60 * 60 * 24)) + 1);
+
       let streak = 0;
-      let d = new Date();
+      let checkDate = new Date(today);
+      if (!history.includes(todayStr)) {
+        checkDate.setDate(checkDate.getDate() - 1);
+      }
+      
       while (true) {
-        const ratio = getCompletionRatio(formatDateKey(d));
-        if (ratio >= 0.5) {
+        const dateStr = checkDate.toISOString().split('T')[0];
+        if (history.includes(dateStr)) {
           streak++;
-          d.setDate(d.getDate() - 1);
+          checkDate.setDate(checkDate.getDate() - 1);
         } else {
           break;
         }
       }
-      document.getElementById('stat-current-streak').innerText = `${streak} Days`;
 
-      // 52-Week Activity Grid
-      const yearContainer = document.getElementById('year-heatmap');
-      yearContainer.innerHTML = '';
-      for (let i = 364; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(today.getDate() - i);
-        const ratio = getCompletionRatio(formatDateKey(date));
+      function countInRange(days) {
+        return history.filter(dStr => {
+          const d = new Date(dStr);
+          const diffDays = (today - d) / (1000 * 60 * 60 * 24);
+          return diffDays >= 0 && diffDays < days;
+        }).length;
+      }
 
-        let tier = 0;
-        if (ratio > 0.8) tier = 5;
-        else if (ratio > 0.6) tier = 4;
-        else if (ratio > 0.4) tier = 3;
-        else if (ratio > 0.2) tier = 2;
-        else if (ratio > 0) tier = 1;
+      const daysInMonth = getDaysInCurrentMonth();
 
-        const box = document.createElement('div');
-        box.className = `w-3 h-3 rounded-sm heat-tier-${tier}`;
-        box.title = `${formatDateKey(date)}: ${Math.round(ratio * 100)}%`;
-        yearContainer.appendChild(box);
+      let badgeClass = "streak";
+      let badgeLabel = `🔥 ${streak} day streak`;
+      if (streak >= 365) {
+        badgeClass = "streak tier-4";
+        badgeLabel = `👑 ${streak}d (Iron Will)`;
+      } else if (streak >= 100) {
+        badgeClass = "streak tier-3";
+        badgeLabel = `🛡️ ${streak}d (Centurion)`;
+      } else if (streak >= 30) {
+        badgeClass = "streak tier-2";
+        badgeLabel = `🔥 ${streak}d (Flame)`;
+      } else if (streak >= 7) {
+        badgeClass = "streak tier-1";
+        badgeLabel = `⚡ ${streak}d (Spark)`;
+      }
+
+      return {
+        streak,
+        badgeClass,
+        badgeLabel,
+        week: `${countInRange(7)}/${Math.min(7, totalDaysActive)}`,
+        month: `${countInRange(daysInMonth)}/${Math.min(daysInMonth, totalDaysActive)}`,
+        year: `${countInRange(365)}/${Math.min(365, totalDaysActive)}`
+      };
+    }
+
+    function toggleHabit(id, customDateStr = null) {
+      const targetDate = customDateStr || getTodayString();
+      habits = habits.map(h => {
+        if (h.id === id) {
+          let history = h.history || [];
+          const oldStats = calculateStats(history, h.createdAt);
+          
+          if (history.includes(targetDate)) {
+            history = history.filter(d => d !== targetDate);
+          } else {
+            history.push(targetDate);
+          }
+
+          const newStats = calculateStats(history, h.createdAt);
+          if (targetDate === getTodayString()) {
+            checkMilestones(oldStats.streak, newStats.streak, h.name);
+          }
+
+          return { ...h, history };
+        }
+        return h;
+      });
+      save();
+
+      if (customDateStr) {
+        renderHeatmap();
+        renderCalendar();
+      } else {
+        renderToday();
       }
     }
 
-    function renderHabitsList() {
-      const container = document.getElementById('habits-list');
-      container.innerHTML = '';
+    function renderToday() {
+      const todayList = document.getElementById('todayList');
+      const today = getTodayString();
+      todayList.innerHTML = '';
 
-      if (!state.habits.length) {
-        container.innerHTML = `<p class="text-sm opacity-60">No habits configured.</p>`;
+      if (habits.length === 0) {
+        todayList.innerHTML = '<p class="empty-state">No habits set up yet. Tap <b>&#9776;</b> and go to <b>Manage Habits</b> to add some!</p>';
         return;
       }
 
-      state.habits.forEach(habit => {
-        const item = document.createElement('div');
-        item.className = 'app-card border rounded-2xl p-4 flex items-center justify-between shadow-sm';
-        item.innerHTML = `
-          <span class="font-medium">${habit.name}</span>
-          <button onclick="deleteHabit('${habit.id}')" class="text-sm text-red-500 hover:underline">Delete</button>
+      habits.forEach(h => {
+        const history = h.history || [];
+        const isChecked = history.includes(today);
+        const stats = calculateStats(history, h.createdAt);
+
+        const card = document.createElement('div');
+        card.className = 'habit-card';
+        card.innerHTML = `
+          <div class="habit-main">
+            <div class="habit-left">
+              <input type="checkbox" class="habit-checkbox" ${isChecked ? 'checked' : ''} onchange="toggleHabit(${h.id})">
+              <span class="habit-name ${isChecked ? 'completed' : ''}">${h.name}</span>
+            </div>
+          </div>
+          <div class="stats-row">
+            <span class="stat-badge ${stats.badgeClass}">${stats.badgeLabel}</span>
+            <span class="stat-badge">7d: ${stats.week}</span>
+            <span class="stat-badge">30d: ${stats.month}</span>
+            <span class="stat-badge">365d: ${stats.year}</span>
+          </div>
         `;
-        container.appendChild(item);
+        todayList.appendChild(card);
       });
     }
 
-    function openHabitModal() {
-      document.getElementById('habit-input-name').value = '';
-      document.getElementById('habit-modal').classList.remove('hidden');
+    /* HEATMAP RENDER */
+    function renderHeatmap() {
+      const container = document.getElementById('heatmapGrid');
+      container.innerHTML = '';
+
+      const today = new Date();
+      const totalDays = 364; // 52 weeks * 7 days
+      const startDate = new Date(today);
+      startDate.setDate(today.getDate() - totalDays);
+
+      let totalCompletions30d = 0;
+      let totalPossible30d = 0;
+
+      for (let i = 0; i <= totalDays; i++) {
+        const d = new Date(startDate);
+        d.setDate(startDate.getDate() + i);
+        const dStr = d.toISOString().split('T')[0];
+
+        const totalHabits = habits.length;
+        let completedCount = 0;
+
+        if (totalHabits > 0) {
+          habits.forEach(h => {
+            if ((h.history || []).includes(dStr)) completedCount++;
+          });
+        }
+
+        const ratio = totalHabits > 0 ? completedCount / totalHabits : 0;
+        let level = 0;
+        if (completedCount > 0) {
+          if (ratio <= 0.25) level = 1;
+          else if (ratio <= 0.5) level = 2;
+          else if (ratio <= 0.75) level = 3;
+          else level = 4;
+        }
+
+        const cell = document.createElement('div');
+        cell.className = 'heatmap-cell';
+        cell.setAttribute('data-level', level);
+        cell.title = `${dStr}: ${completedCount}/${totalHabits} completed`;
+        cell.onclick = () => selectCalDate(dStr);
+
+        container.appendChild(cell);
+
+        // Calculate 30-day consistency score
+        const diffDays = (today - d) / (1000 * 60 * 60 * 24);
+        if (diffDays >= 0 && diffDays < 30) {
+          totalCompletions30d += completedCount;
+          totalPossible30d += totalHabits;
+        }
+      }
+
+      const scoreElem = document.getElementById('consistencyScore');
+      if (totalPossible30d > 0) {
+        const percentage = Math.round((totalCompletions30d / totalPossible30d) * 100);
+        scoreElem.textContent = `${percentage}% Consistency (30d)`;
+      } else {
+        scoreElem.textContent = `0% Consistency`;
+      }
+
+      // Auto-scroll heatmap to the right (current date)
+      setTimeout(() => {
+        const scrollContainer = document.querySelector('.heatmap-container');
+        if (scrollContainer) scrollContainer.scrollLeft = scrollContainer.scrollWidth;
+      }, 50);
     }
 
-    function closeHabitModal() {
-      document.getElementById('habit-modal').classList.add('hidden');
+    /* CALENDAR FUNCTIONALITY */
+    function changeMonth(delta) {
+      calDate.setMonth(calDate.getMonth() + delta);
+      renderCalendar();
     }
 
-    function saveHabit() {
-      const name = document.getElementById('habit-input-name').value.trim();
+    function selectCalDate(dateStr) {
+      selectedCalDateStr = dateStr;
+      const [y, m] = dateStr.split('-');
+      calDate = new Date(y, m - 1, 1);
+      renderCalendar();
+    }
+
+    function renderCalendar() {
+      const grid = document.getElementById('calGrid');
+      grid.innerHTML = '';
+
+      const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+      const dayNames = ["S", "M", "T", "W", "T", "F", "S"];
+
+      document.getElementById('calMonthTitle').textContent = `${monthNames[calDate.getMonth()]} ${calDate.getFullYear()}`;
+
+      dayNames.forEach(d => {
+        const label = document.createElement('div');
+        label.className = 'cal-day-label';
+        label.textContent = d;
+        grid.appendChild(label);
+      });
+
+      const year = calDate.getFullYear();
+      const month = calDate.getMonth();
+      const firstDayIdx = new Date(year, month, 1).getDay();
+      const totalDays = new Date(year, month + 1, 0).getDate();
+
+      for (let i = 0; i < firstDayIdx; i++) {
+        const emptyCell = document.createElement('div');
+        emptyCell.className = 'cal-cell empty';
+        grid.appendChild(emptyCell);
+      }
+
+      const todayStr = getTodayString();
+
+      for (let d = 1; d <= totalDays; d++) {
+        const dStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        
+        // Calculate completion consistency level for this day
+        const totalHabits = habits.length;
+        let completedCount = 0;
+        if (totalHabits > 0) {
+          habits.forEach(h => {
+            if ((h.history || []).includes(dStr)) completedCount++;
+          });
+        }
+
+        const ratio = totalHabits > 0 ? completedCount / totalHabits : 0;
+        let level = 0;
+        if (completedCount > 0) {
+          if (ratio <= 0.25) level = 1;
+          else if (ratio <= 0.5) level = 2;
+          else if (ratio <= 0.75) level = 3;
+          else level = 4;
+        }
+
+        const cell = document.createElement('div');
+        cell.className = 'cal-cell';
+        cell.setAttribute('data-level', level);
+
+        if (dStr === todayStr) cell.classList.add('today');
+        if (dStr === selectedCalDateStr) cell.classList.add('selected');
+
+        cell.textContent = d;
+        cell.onclick = () => selectCalDate(dStr);
+
+        grid.appendChild(cell);
+      }
+
+      renderCalEditor();
+    }
+
+    function renderCalEditor() {
+      const calHabitList = document.getElementById('calHabitList');
+      const title = document.getElementById('selectedDateTitle');
+      calHabitList.innerHTML = '';
+
+      const [y, m, d] = selectedCalDateStr.split('-');
+      const formattedDate = new Date(y, m - 1, d).toLocaleDateString('en-US', {
+        month: 'short', day: 'numeric', year: 'numeric'
+      });
+
+      title.textContent = `Habits for ${formattedDate}`;
+
+      if (habits.length === 0) {
+        calHabitList.innerHTML = '<p class="empty-state">No habits created yet.</p>';
+        return;
+      }
+
+      habits.forEach(h => {
+        const history = h.history || [];
+        const isChecked = history.includes(selectedCalDateStr);
+
+        const card = document.createElement('div');
+        card.className = 'habit-card';
+        card.innerHTML = `
+          <div class="habit-main">
+            <div class="habit-left">
+              <input type="checkbox" class="habit-checkbox" ${isChecked ? 'checked' : ''} onchange="toggleHabit(${h.id}, '${selectedCalDateStr}')">
+              <span class="habit-name ${isChecked ? 'completed' : ''}">${h.name}</span>
+            </div>
+          </div>
+        `;
+        calHabitList.appendChild(card);
+      });
+    }
+
+    /* MANAGE VIEW */
+    function addHabit() {
+      const input = document.getElementById('habitInput');
+      const name = input.value.trim();
       if (!name) return;
-      state.habits.push({ id: Date.now().toString(), name });
-      saveState();
-      closeHabitModal();
-      renderHabitsList();
+      habits.push({
+        id: Date.now(),
+        name: name,
+        createdAt: getTodayString(),
+        history: []
+      });
+      input.value = '';
+      save();
+      renderManage();
     }
 
     function deleteHabit(id) {
-      state.habits = state.habits.filter(h => h.id !== id);
-      saveState();
-      renderHabitsList();
+      habits = habits.filter(h => h.id !== id);
+      save();
+      renderManage();
     }
 
-    function resetData() {
-      if (confirm('Are you sure you want to delete all habits and records?')) {
-        localStorage.clear();
-        location.reload();
+    function renderManage() {
+      const manageList = document.getElementById('manageList');
+      manageList.innerHTML = '';
+
+      if (habits.length === 0) {
+        manageList.innerHTML = '<p class="empty-state">Your habit list is empty. Type a habit above to start.</p>';
+        return;
       }
+
+      habits.forEach(h => {
+        const card = document.createElement('div');
+        card.className = 'habit-card';
+        card.innerHTML = `
+          <div class="habit-main">
+            <span class="habit-name">${h.name}</span>
+            <button class="delete-btn" onclick="deleteHabit(${h.id})">&times;</button>
+          </div>
+        `;
+        manageList.appendChild(card);
+      });
     }
 
-    // Run application on DOM ready
-    document.addEventListener('DOMContentLoaded', init);
+    document.getElementById('addBtn').onclick = addHabit;
+    document.getElementById('habitInput').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') addHabit();
+    });
+
+    renderToday();
   </script>
 </body>
 </html>
